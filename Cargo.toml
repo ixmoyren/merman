@@ -1,17 +1,16 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
-  "crates/merman",
-  "crates/merman-core",
-  "crates/merman-cli",
-  "crates/merman-render",
-  "crates/dugong",
-  "crates/dugong-graphlib",
-  "crates/manatee",
-  "crates/roughr",
-  "crates/xtask",
+    "crates/merman",
+    "crates/merman-core",
+    "crates/merman-cli",
+    "crates/merman-render",
+    "crates/dugong",
+    "crates/dugong-graphlib",
+    "crates/manatee",
+    "crates/roughr",
+    "crates/xtask",
 ]
-exclude = ["repo-ref/*"]
 
 [workspace.package]
 version = "0.4.0"
@@ -20,39 +19,40 @@ authors = ["Mingzhen Zhuang <superfrankie621@gmail.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Latias94/merman"
 homepage = "https://github.com/Latias94/merman"
-rust-version = "1.87"
+rust-version = "1.94"
 
 [workspace.dependencies]
 base64 = "0.22.1"
 euclid = "0.22"
 htmlize = { version = "1.0.6", features = ["unescape"] }
-indexmap = { version = "2.2.6", features = ["serde"] }
-lalrpop = "0.20.2"
-lalrpop-util = "0.20.2"
-logos = "0.14.4"
+indexmap = { version = "2.13", features = ["serde"] }
+lalrpop = "0.23.1"
+lalrpop-util = "0.23.1"
+logos = "0.16.1"
 nalgebra = { version = "0.34.1", default-features = false, features = ["std"] }
-pulldown-cmark = "0.12.2"
+pulldown-cmark = "0.13.3"
 regex = "1.11.1"
-roxmltree = "0.20.0"
+roxmltree = "0.21.1"
 rustc-hash = "2.1.1"
 ryu-js = "1.0.2"
 roughr = { package = "roughr-merman", path = "crates/roughr", version = "0.12.0" }
-serde = { version = "1.0.217", features = ["derive", "rc"] }
-serde_json = { version = "1.0.138", features = ["preserve_order"] }
+serde = { version = "1.0.228", features = ["derive", "rc"] }
+serde_json = { version = "1.0.149", features = ["preserve_order"] }
 serde_yaml = "0.9.34"
-json5 = "0.4.1"
-thiserror = "2.0.11"
-tracing = "0.1.41"
-futures = "0.3.31"
+svgtypes = "0.16"
+json5 = "1.3.1"
+thiserror = "2.0.18"
+tracing = "0.1.44"
+futures = "0.3.32"
 hashbrown = "0.16.1"
-lol_html = "2.7.1"
-url = "2.5.4"
-uuid = { version = "1.12.1", features = ["v4"] }
-chrono = { version = "0.4.40", features = ["clock"] }
+lol_html = "2.7.2"
+url = "2.5.8"
+uuid = { version = "1.22.0", features = ["v4"] }
+chrono = { version = "0.4.44", features = ["clock"] }
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
-resvg = "0.46.0"
-usvg = "0.46.0"
-tiny-skia = "0.11.4"
+resvg = "0.47.0"
+usvg = "0.47.0"
+tiny-skia = "0.12.0"
 svg2pdf = "0.13.0"
 unicode-width = "0.2.2"
 

@@ -39,7 +39,7 @@ tiny-skia = { workspace = true, optional = true }
 svg2pdf = { workspace = true, optional = true }
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = "0.8.2"
 roxmltree.workspace = true
 
 [[bench]]
