@@ -162,8 +162,10 @@ pub mod core;
 pub mod filler;
 pub mod generator;
 pub mod geometry;
+pub mod points_on_curve;
 pub mod points_on_path;
 pub mod renderer;
+pub mod svg_path_ops;
 
 pub use euclid::Point2D;
 pub use palette::Srgba;
