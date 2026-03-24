@@ -3,8 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - main
-      - master
+      - huhuhu
   pull_request:
 
 concurrency:
@@ -19,15 +18,15 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-22.04
-          - macos-14
-          - windows-2022
+          - windows-latest
+          - ubuntu-latest
+          - macos-latest
 
     steps:
       - uses: actions/checkout@v5
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.87.0
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
@@ -39,21 +38,21 @@ jobs:
         run: cargo nextest run --cargo-quiet
 
       - name: Test (nextest, merman render)
-        if: matrix.os == 'ubuntu-22.04'
+        if: matrix.os == 'ubuntu-latest'
         run: cargo nextest run -p merman --features render --cargo-quiet
 
       - name: Build (release)
         run: cargo build --release --locked -p merman-cli
 
       - name: Override inventory
-        if: matrix.os == 'ubuntu-22.04'
+        if: matrix.os == 'ubuntu-latest'
         run: cargo run --release -p xtask -- report-overrides
 
       - name: SVG DOM parity
-        if: matrix.os == 'ubuntu-22.04'
+        if: matrix.os == 'ubuntu-latest'
         run: cargo run --release -p xtask -- compare-all-svgs --check-dom --dom-mode parity --dom-decimals 3
 
       - name: SVG DOM parity (parity-root, non-blocking)
-        if: matrix.os == 'ubuntu-22.04'
+        if: matrix.os == 'ubuntu-latest'
         continue-on-error: true
         run: cargo run --release -p xtask -- compare-all-svgs --check-dom --dom-mode parity-root --dom-decimals 3 --flowchart-text-measurer vendored --report-root
