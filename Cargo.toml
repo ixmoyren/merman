@@ -53,6 +53,7 @@ image = { version = "0.25", default-features = false, features = ["jpeg"] }
 resvg = "0.47.0"
 usvg = "0.47.0"
 tiny-skia = "0.12.0"
+# Subsequently, krilla-svg was used to replace svg2pdf. Currently, krilla-svg is still using the old versions of resvg and usvg
 svg2pdf = "0.13.0"
 unicode-width = "0.2.2"
 

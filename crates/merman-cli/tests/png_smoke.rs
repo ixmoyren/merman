@@ -1,7 +1,7 @@
 use assert_cmd::prelude::*;
 use png::ColorType;
 use std::fs;
-use std::io::Read;
+use std::io::{Cursor, Read};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -140,10 +140,10 @@ fn cli_renders_png_for_negative_viewbox_diagrams() {
         .expect("open png")
         .read_to_end(&mut bytes)
         .expect("read png");
-
-    let decoder = png::Decoder::new(bytes.as_slice());
+    let cursor = Cursor::new(bytes);
+    let decoder = png::Decoder::new(cursor);
     let mut reader = decoder.read_info().expect("png read_info");
-    let mut buf = vec![0u8; reader.output_buffer_size()];
+    let mut buf = vec![0u8; reader.output_buffer_size().unwrap()];
     let info = reader.next_frame(&mut buf).expect("png next_frame");
     assert_eq!(info.color_type, ColorType::Rgba, "expected RGBA output");
     assert_eq!(

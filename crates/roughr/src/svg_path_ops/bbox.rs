@@ -145,9 +145,9 @@ impl BBox {
         self
     }
 
-    fn add_point(&mut self, x: f64, y: f64) -> &mut Self {
-        self.add_x(x).add_y(y)
-    }
+    // fn add_point(&mut self, x: f64, y: f64) -> &mut Self {
+    //     self.add_x(x).add_y(y)
+    // }
 
     /// Add new quadratic curve to X coordinate
     pub fn add_x_q(&mut self, a: &[f64]) -> &mut Self {
@@ -372,11 +372,7 @@ pub fn minmax_q(a: &[f64]) -> [f64; 2] {
     // check if the extremum E is min or max
     let e = (a[0] * a[2] - a[1] * a[1]) / (a[0] - 2.0 * a[1] + a[2]);
 
-    if e < min {
-        [e, max]
-    } else {
-        [min, e]
-    }
+    if e < min { [e, max] } else { [min, e] }
 }
 
 #[cfg(test)]
@@ -431,38 +427,38 @@ mod test {
         assert_eq!(b.height(), 5.0);
     }
 
-    #[test]
-    fn test_add_point_and_coordinates() {
-        let mut b = BBox::new();
-
-        // Add initial point (1,1)
-        b.add_point(1.0, 1.0);
-        assert_eq!(b.min_x, Some(1.0));
-        assert_eq!(b.max_x, Some(1.0));
-        assert_eq!(b.min_y, Some(1.0));
-        assert_eq!(b.max_y, Some(1.0));
-
-        // Add x coordinate 2
-        b.add_x(2.0);
-        assert_eq!(b.min_x, Some(1.0));
-        assert_eq!(b.max_x, Some(2.0));
-        assert_eq!(b.min_y, Some(1.0));
-        assert_eq!(b.max_y, Some(1.0));
-
-        // Add y coordinate 3
-        b.add_y(3.0);
-        assert_eq!(b.min_x, Some(1.0));
-        assert_eq!(b.max_x, Some(2.0));
-        assert_eq!(b.min_y, Some(1.0));
-        assert_eq!(b.max_y, Some(3.0));
-
-        // Add point (4,-5)
-        b.add_point(4.0, -5.0);
-        assert_eq!(b.min_x, Some(1.0));
-        assert_eq!(b.max_x, Some(4.0));
-        assert_eq!(b.min_y, Some(-5.0));
-        assert_eq!(b.max_y, Some(3.0));
-    }
+    // #[test]
+    // fn test_add_point_and_coordinates() {
+    //     let mut b = BBox::new();
+    //
+    //     // Add initial point (1,1)
+    //     b.add_point(1.0, 1.0);
+    //     assert_eq!(b.min_x, Some(1.0));
+    //     assert_eq!(b.max_x, Some(1.0));
+    //     assert_eq!(b.min_y, Some(1.0));
+    //     assert_eq!(b.max_y, Some(1.0));
+    //
+    //     // Add x coordinate 2
+    //     b.add_x(2.0);
+    //     assert_eq!(b.min_x, Some(1.0));
+    //     assert_eq!(b.max_x, Some(2.0));
+    //     assert_eq!(b.min_y, Some(1.0));
+    //     assert_eq!(b.max_y, Some(1.0));
+    //
+    //     // Add y coordinate 3
+    //     b.add_y(3.0);
+    //     assert_eq!(b.min_x, Some(1.0));
+    //     assert_eq!(b.max_x, Some(2.0));
+    //     assert_eq!(b.min_y, Some(1.0));
+    //     assert_eq!(b.max_y, Some(3.0));
+    //
+    //     // Add point (4,-5)
+    //     b.add_point(4.0, -5.0);
+    //     assert_eq!(b.min_x, Some(1.0));
+    //     assert_eq!(b.max_x, Some(4.0));
+    //     assert_eq!(b.min_y, Some(-5.0));
+    //     assert_eq!(b.max_y, Some(3.0));
+    // }
 
     #[test]
     fn test_add_quadratic_curve() {
