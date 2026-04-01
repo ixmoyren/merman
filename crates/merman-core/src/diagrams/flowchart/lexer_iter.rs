@@ -1,7 +1,7 @@
 use super::{LexError, Lexer, Tok};
 
 impl<'input> Iterator for Lexer<'input> {
-    type Item = std::result::Result<(usize, Tok, usize), LexError>;
+    type Item = Result<(usize, Tok, usize), LexError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(tok) = self.pending.pop_front() {

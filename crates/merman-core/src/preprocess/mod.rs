@@ -2,28 +2,29 @@ use crate::{DetectorRegistry, Error, MermaidConfig, Result};
 use regex::Regex;
 use serde_json::Value;
 use std::borrow::Cow;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
-macro_rules! cached_regex {
-    ($fn_name:ident, $pat:literal) => {
-        fn $fn_name() -> &'static Regex {
-            static RE: OnceLock<Regex> = OnceLock::new();
-            RE.get_or_init(|| Regex::new($pat).expect("preprocess regex must compile"))
-        }
-    };
-}
-
-cached_regex!(re_crlf, r"\r\n?");
-cached_regex!(re_tag, r"<(\w+)([^>]*)>");
-cached_regex!(re_attr_eq_double_quoted, "=\"([^\"]*)\"");
-cached_regex!(re_style_hex, r"style.*:\S*#.*;");
-cached_regex!(re_classdef_hex, r"classDef.*:\S*#.*;");
-cached_regex!(re_entity, r"#\w+;");
-cached_regex!(re_int, r"^\+?\d+$");
-cached_regex!(
-    re_frontmatter,
-    r"(?s)^-{3}\s*[\n\r](.*?)[\n\r]-{3}\s*[\n\r]+"
-);
+static RE_CRLF: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\r\n?").expect("preprocess regex crlf must compile"));
+static RE_TAG: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"<(\w+)([^>]*)>").expect("preprocess regex tag must compile"));
+static RE_ATTR_EQ_DOUBLE_QUOTED: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new("=\"([^\"]*)\"").expect("preprocess regex attr_eq_double_quoted must compile")
+});
+static RE_STYLE_HEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"style.*:\S*#.*;").expect("preprocess regex style hex must compile")
+});
+static RE_CLASS_DEF_HEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"classDef.*:\S*#.*;").expect("preprocess regex class def hex must compile")
+});
+static RE_ENTITY: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"#\w+;").expect("preprocess regex entity must compile"));
+static RE_INT: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^\+?\d+$").expect("preprocess regex int must compile"));
+static RE_FRONTMATTER: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?s)^-{3}\s*[\n\r](.*?)[\n\r]-{3}\s*[\n\r]+")
+        .expect("preprocess regex frontmatter must compile")
+});
 
 #[derive(Debug, Clone)]
 pub struct PreprocessResult {
@@ -59,7 +60,7 @@ pub fn preprocess_diagram_with_known_type(
 
 fn cleanup_text(input: &str) -> Cow<'_, str> {
     let mut s: Cow<'_, str> = if input.contains('\r') {
-        Cow::Owned(re_crlf().replace_all(input, "\n").into_owned())
+        Cow::Owned(RE_CRLF.replace_all(input, "\n").into_owned())
     } else {
         Cow::Borrowed(input)
     };
@@ -76,11 +77,11 @@ fn cleanup_text(input: &str) -> Cow<'_, str> {
     // Mermaid performs this HTML attribute rewrite as part of preprocessing.
     if s.contains('<') && s.contains("=\"") {
         s = Cow::Owned(
-            re_tag()
+            RE_TAG
                 .replace_all(s.as_ref(), |caps: &regex::Captures| {
                     let tag = &caps[1];
                     let attrs = &caps[2];
-                    let attrs = re_attr_eq_double_quoted().replace_all(attrs, "='$1'");
+                    let attrs = RE_ATTR_EQ_DOUBLE_QUOTED.replace_all(attrs, "='$1'");
                     format!("<{tag}{attrs}>")
                 })
                 .into_owned(),
@@ -103,7 +104,7 @@ fn encode_mermaid_entities_like_upstream(text: &str) -> String {
     let mut txt = text.to_string();
 
     if txt.contains("style") && txt.contains(';') {
-        txt = re_style_hex()
+        txt = RE_STYLE_HEX
             .replace_all(&txt, |caps: &regex::Captures| {
                 let s = caps.get(0).map(|m| m.as_str()).unwrap_or_default();
                 s.strip_suffix(';').unwrap_or(s).to_string()
@@ -112,7 +113,7 @@ fn encode_mermaid_entities_like_upstream(text: &str) -> String {
     }
 
     if txt.contains("classDef") && txt.contains(';') {
-        txt = re_classdef_hex()
+        txt = RE_CLASS_DEF_HEX
             .replace_all(&txt, |caps: &regex::Captures| {
                 let s = caps.get(0).map(|m| m.as_str()).unwrap_or_default();
                 s.strip_suffix(';').unwrap_or(s).to_string()
@@ -121,14 +122,14 @@ fn encode_mermaid_entities_like_upstream(text: &str) -> String {
     }
 
     if txt.contains(';') {
-        txt = re_entity()
+        txt = RE_ENTITY
             .replace_all(&txt, |caps: &regex::Captures| {
                 let s = caps.get(0).map(|m| m.as_str()).unwrap_or_default();
                 let inner = s
                     .strip_prefix('#')
                     .and_then(|s| s.strip_suffix(';'))
                     .unwrap_or("");
-                let is_int = re_int().is_match(inner);
+                let is_int = RE_INT.is_match(inner);
                 if is_int {
                     format!("ﬂ°°{inner}¶ß")
                 } else {
@@ -161,7 +162,7 @@ fn process_frontmatter(input: &str) -> Result<(&str, Option<String>, MermaidConf
         return Ok((input, None, MermaidConfig::empty_object()));
     }
 
-    let Some(caps) = re_frontmatter().captures(input) else {
+    let Some(caps) = RE_FRONTMATTER.captures(input) else {
         return Ok((input, None, MermaidConfig::empty_object()));
     };
 

@@ -1,16 +1,12 @@
 use crate::{MermaidConfig, Result};
 use regex::Regex;
 use std::borrow::Cow;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
-macro_rules! cached_regex {
-    ($fn_name:ident, $pat:literal) => {
-        fn $fn_name() -> &'static Regex {
-            static RE: OnceLock<Regex> = OnceLock::new();
-            RE.get_or_init(|| Regex::new($pat).expect("detector regex must compile"))
-        }
-    };
-}
+static RE_C4: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^\s*C4Context|C4Container|C4Component|C4Dynamic|C4Deployment")
+        .expect("preprocess regex c4 must compile")
+});
 
 #[derive(Debug, thiserror::Error)]
 #[error("No diagram type detected matching given configuration for text: {text}")]
@@ -268,11 +264,6 @@ fn remove_directives(text: &str) -> Cow<'_, str> {
     Cow::Owned(out)
 }
 
-cached_regex!(
-    re_c4,
-    r"^\s*C4Context|C4Container|C4Component|C4Dynamic|C4Deployment"
-);
-
 impl Default for DetectorRegistry {
     fn default() -> Self {
         Self::new()
@@ -289,7 +280,7 @@ fn detector_error(txt: &str, _config: &mut MermaidConfig) -> bool {
 
 fn detector_c4(txt: &str, _config: &mut MermaidConfig) -> bool {
     // Matches Mermaid's upstream regex exactly (note the missing grouping in JS).
-    re_c4().is_match(txt)
+    RE_C4.is_match(txt)
 }
 
 fn detector_kanban(txt: &str, _config: &mut MermaidConfig) -> bool {
