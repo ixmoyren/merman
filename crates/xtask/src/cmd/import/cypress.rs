@@ -284,7 +284,7 @@ pub(crate) fn import_upstream_cypress(args: Vec<String>) -> Result<(), XtaskErro
             if idx > 0 {
                 out.push('\n');
             }
-            let line = raw_line.trim_end_matches(|c| c == ' ' || c == '\t');
+            let line = raw_line.trim_end_matches([' ', '\t']);
 
             if let Some(caps) = edge_label_re.captures(line) {
                 let indent = caps.name("indent").map(|m| m.as_str()).unwrap_or_default();
