@@ -9,6 +9,8 @@ pub enum RasterError {
     Headless(#[from] HeadlessError),
     #[error("failed to parse SVG")]
     SvgParse,
+    #[error("failed to set SVG Document size from tree")]
+    SvgDocSize,
     #[error("failed to allocate pixmap for raster rendering")]
     PixmapAlloc,
     #[error("failed to encode PNG")]
@@ -128,19 +130,32 @@ pub fn svg_to_jpeg(svg: &str, options: &RasterOptions) -> Result<Vec<u8>> {
 }
 
 pub fn svg_to_pdf(svg: &str) -> Result<Vec<u8>> {
-    let mut opt = svg2pdf::usvg::Options::default();
-    opt.fontdb_mut().load_system_fonts();
-    // Keep output stable-ish across environments while still using system fonts.
-    opt.font_family = "Arial".to_string();
+    use krilla_svg::SurfaceExt;
+    use std::sync::Arc;
 
-    let tree = svg2pdf::usvg::Tree::from_str(svg, &opt).map_err(|_| RasterError::SvgParse)?;
+    let mut fontdb = usvg::fontdb::Database::new();
+    fontdb.load_system_fonts();
+    let opts = usvg::Options {
+        fontdb: Arc::new(fontdb),
+        font_family: "Arial".to_string(),
+        ..Default::default()
+    };
+    let svg_tree = usvg::Tree::from_str(svg, &opts).map_err(|_| RasterError::SvgParse)?;
+    let mut document = krilla::Document::new();
+    let Some(svg_size) =
+        krilla::geom::Size::from_wh(svg_tree.size().width(), svg_tree.size().height())
+    else {
+        return Err(RasterError::SvgDocSize);
+    };
+    let mut page = document.start_page_with(krilla::page::PageSettings::new(svg_size));
+    let mut surface = page.surface();
+    surface.draw_svg(&svg_tree, svg_size, krilla_svg::SvgSettings::default());
+    surface.finish();
+    page.finish();
 
-    svg2pdf::to_pdf(
-        &tree,
-        svg2pdf::ConversionOptions::default(),
-        svg2pdf::PageOptions::default(),
-    )
-    .map_err(|_| RasterError::PdfConvert)
+    let pdf = document.finish().map_err(|_| RasterError::PdfConvert)?;
+
+    Ok(pdf)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -240,10 +255,10 @@ fn svg_to_pixmap(svg: &str, scale: f32, background: Option<&str>) -> Result<tiny
 
     let mut pixmap = tiny_skia::Pixmap::new(width_px, height_px).ok_or(RasterError::PixmapAlloc)?;
 
-    if let Some(bg) = background {
-        if let Some(color) = parse_tiny_skia_color(bg) {
-            pixmap.fill(color);
-        }
+    if let Some(bg) = background
+        && let Some(color) = parse_tiny_skia_color(bg)
+    {
+        pixmap.fill(color);
     }
 
     let transform = if translate_min_to_origin {

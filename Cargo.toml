@@ -24,16 +24,16 @@ rust-version = "1.94"
 [workspace.dependencies]
 base64 = "0.22.1"
 euclid = "0.22"
-htmlize = { version = "1.0.6", features = ["unescape"] }
-indexmap = { version = "2.13", features = ["serde"] }
+htmlize = { version = "1.1", features = ["unescape"] }
+indexmap = { version = "2.14", features = ["serde"] }
 lalrpop = "0.23.1"
 lalrpop-util = "0.23.1"
 logos = "0.16.1"
-nalgebra = { version = "0.34.1", default-features = false, features = ["std"] }
+nalgebra = { git = "https://github.com/dimforge/nalgebra.git", default-features = false, features = ["std"] }
 pulldown-cmark = "0.13.3"
-regex = "1.11.1"
+regex = "1.12"
 roxmltree = "0.21.1"
-rustc-hash = "2.1.1"
+rustc-hash = "2.1.2"
 ryu-js = "1.0.2"
 roughr = { package = "roughr-merman", path = "crates/roughr", version = "0.12.0" }
 serde = { version = "1.0.228", features = ["derive", "rc"] }
@@ -44,17 +44,15 @@ json5 = "1.3.1"
 thiserror = "2.0.18"
 tracing = "0.1.44"
 futures = "0.3.32"
-hashbrown = "0.16.1"
+hashbrown = "0.17.0"
 lol_html = "2.7.2"
 url = "2.5.8"
-uuid = { version = "1.22.0", features = ["v4"] }
+uuid = { version = "1.23.1", features = ["v4"] }
 chrono = { version = "0.4.44", features = ["clock"] }
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
 resvg = "0.47.0"
 usvg = "0.47.0"
 tiny-skia = "0.12.0"
-# Subsequently, krilla-svg was used to replace svg2pdf. Currently, krilla-svg is still using the old versions of resvg and usvg
-svg2pdf = "0.13.0"
 unicode-width = "0.2.2"
 
 # Workspace crates (publishable). Keeping versions explicit makes `cargo publish` work without

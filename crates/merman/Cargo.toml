@@ -25,7 +25,9 @@ raster = [
     "dep:resvg",
     "dep:usvg",
     "dep:tiny-skia",
-    "dep:svg2pdf",
+    "dep:gif",
+    "dep:krilla",
+    "dep:krilla-svg",
 ]
 
 [dependencies]
@@ -36,7 +38,9 @@ image = { workspace = true, optional = true }
 resvg = { workspace = true, optional = true }
 usvg = { workspace = true, optional = true }
 tiny-skia = { workspace = true, optional = true }
-svg2pdf = { workspace = true, optional = true }
+gif = { version = "0.14.2", optional = true }
+krilla = { git = "https://github.com/LaurenzV/krilla.git", optional = true }
+krilla-svg = { git = "https://github.com/LaurenzV/krilla.git", optional = true }
 
 [dev-dependencies]
 criterion = "0.8.2"
