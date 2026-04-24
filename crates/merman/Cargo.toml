@@ -34,13 +34,13 @@ raster = [
 merman-core.workspace = true
 merman-render = { workspace = true, optional = true }
 thiserror = { workspace = true, optional = true }
-image = { workspace = true, optional = true }
+gif = { version = "0.14.2", optional = true }
+image = { version = "0.25", default-features = false, features = ["jpeg"], optional = true }
+krilla = { git = "https://github.com/LaurenzV/krilla.git", optional = true }
+krilla-svg = { git = "https://github.com/LaurenzV/krilla.git", optional = true }
 resvg = { workspace = true, optional = true }
 usvg = { workspace = true, optional = true }
 tiny-skia = { workspace = true, optional = true }
-gif = { version = "0.14.2", optional = true }
-krilla = { git = "https://github.com/LaurenzV/krilla.git", optional = true }
-krilla-svg = { git = "https://github.com/LaurenzV/krilla.git", optional = true }
 
 [dev-dependencies]
 criterion = "0.8.2"
