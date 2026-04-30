@@ -5,6 +5,7 @@ use crate::model::{
     QuadrantChartPointData, QuadrantChartQuadrantData, QuadrantChartTextData,
 };
 use crate::text::TextMeasurer;
+use merman_core::color::{Hsl, Rgb};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -186,101 +187,29 @@ struct QuadrantThemeConfig {
     quadrant_external_border_stroke_fill: String,
 }
 
-fn parse_hex_rgb(s: &str) -> Option<(u8, u8, u8)> {
-    let t = s.trim().strip_prefix('#').unwrap_or(s.trim());
-    if t.len() != 6 || !t.chars().all(|c| c.is_ascii_hexdigit()) {
-        return None;
-    }
-    let r = u8::from_str_radix(&t[0..2], 16).ok()?;
-    let g = u8::from_str_radix(&t[2..4], 16).ok()?;
-    let b = u8::from_str_radix(&t[4..6], 16).ok()?;
-    Some((r, g, b))
-}
-
 fn invert_hex_rgb(hex: &str) -> Option<String> {
-    let (r, g, b) = parse_hex_rgb(hex)?;
-    Some(format!("#{:02x}{:02x}{:02x}", 255 - r, 255 - g, 255 - b))
+    let rgb = Rgb::try_from(hex).ok()?;
+    Some(
+        Rgb {
+            r: 1.0 - rgb.r,
+            g: 1.0 - rgb.g,
+            b: 1.0 - rgb.b,
+        }
+        .to_string(),
+    )
 }
 
 fn adjust_hex_rgb(hex: &str, delta: i16) -> Option<String> {
-    let (r, g, b) = parse_hex_rgb(hex)?;
-    let adj = |c: u8| -> u8 {
-        let v = c as i16 + delta;
-        v.clamp(0, 255) as u8
-    };
-    Some(format!("#{:02x}{:02x}{:02x}", adj(r), adj(g), adj(b)))
-}
-
-fn fmt_rgb(r: u8, g: u8, b: u8) -> String {
-    format!("rgb({r}, {g}, {b})")
-}
-
-fn parse_hsl_css(s: &str) -> Option<(f64, f64, f64)> {
-    let inner = s.trim().strip_prefix("hsl(")?.strip_suffix(')')?;
-    let mut parts = inner.split(',').map(|p| p.trim());
-    let h = parts.next()?.parse::<f64>().ok()?;
-    let s = parts
-        .next()?
-        .strip_suffix('%')
-        .unwrap_or_default()
-        .parse::<f64>()
-        .ok()?;
-    let l = parts
-        .next()?
-        .strip_suffix('%')
-        .unwrap_or_default()
-        .parse::<f64>()
-        .ok()?;
-    Some((h, s, l))
-}
-
-fn hsl_to_rgb_u8(h_deg: f64, s_pct: f64, l_pct: f64) -> Option<(u8, u8, u8)> {
-    if !(h_deg.is_finite() && s_pct.is_finite() && l_pct.is_finite()) {
-        return None;
-    }
-
-    let h = (h_deg / 360.0).rem_euclid(1.0);
-    let s = (s_pct / 100.0).clamp(0.0, 1.0);
-    let l = (l_pct / 100.0).clamp(0.0, 1.0);
-
-    // HSL -> RGB (same parameterization as Python's `colorsys.hls_to_rgb`).
-    if s == 0.0 {
-        let v = (l * 255.0).round().clamp(0.0, 255.0) as u8;
-        return Some((v, v, v));
-    }
-
-    let q = if l < 0.5 {
-        l * (1.0 + s)
-    } else {
-        l + s - l * s
-    };
-    let p = 2.0 * l - q;
-
-    fn hue_to_rgb(p: f64, q: f64, mut t: f64) -> f64 {
-        if t < 0.0 {
-            t += 1.0;
+    let rgb = Rgb::try_from(hex).ok()?;
+    let d = delta as f64 / 255.0;
+    Some(
+        Rgb {
+            r: (rgb.r + d).clamp(0.0, 1.0),
+            g: (rgb.g + d).clamp(0.0, 1.0),
+            b: (rgb.b + d).clamp(0.0, 1.0),
         }
-        if t > 1.0 {
-            t -= 1.0;
-        }
-        if t < 1.0 / 6.0 {
-            return p + (q - p) * 6.0 * t;
-        }
-        if t < 1.0 / 2.0 {
-            return q;
-        }
-        if t < 2.0 / 3.0 {
-            return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
-        }
-        p
-    }
-
-    let r = hue_to_rgb(p, q, h + 1.0 / 3.0);
-    let g = hue_to_rgb(p, q, h);
-    let b = hue_to_rgb(p, q, h - 1.0 / 3.0);
-
-    let to_u8 = |v: f64| (v * 255.0).round().clamp(0.0, 255.0) as u8;
-    Some((to_u8(r), to_u8(g), to_u8(b)))
+        .to_string(),
+    )
 }
 
 fn css_color_to_rgb_string(s: &str) -> Option<String> {
@@ -288,12 +217,15 @@ fn css_color_to_rgb_string(s: &str) -> Option<String> {
     if t.starts_with("rgb(") {
         return Some(t.to_string());
     }
-    if let Some((r, g, b)) = parse_hex_rgb(t) {
-        return Some(fmt_rgb(r, g, b));
+    if let Ok(rgb) = Rgb::try_from(t) {
+        return Some(rgb.to_u8_expr());
     }
-    if let Some((h, s, l)) = parse_hsl_css(t) {
-        let (r, g, b) = hsl_to_rgb_u8(h, s, l)?;
-        return Some(fmt_rgb(r, g, b));
+    if let Some(hsl) = Hsl::parse_from(t) {
+        if !(hsl.h_deg.is_finite() && hsl.s_pct.is_finite() && hsl.l_pct.is_finite()) {
+            return None;
+        }
+        let rgb = Rgb::from(hsl);
+        return Some(rgb.to_u8_expr());
     }
     None
 }

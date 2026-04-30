@@ -156,4 +156,11 @@ impl Rgb {
     pub fn to_rgb_expr(&self) -> String {
         format!("rgb({}, {}, {})", self.r, self.g, self.b)
     }
+
+    pub fn to_u8_expr(&self) -> String {
+        let r = (self.r * 255.0).round() as u8;
+        let g = (self.g * 255.0).round() as u8;
+        let b = (self.b * 255.0).round() as u8;
+        format!("rgb({r}, {g}, {b})")
+    }
 }

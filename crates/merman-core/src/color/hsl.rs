@@ -110,4 +110,27 @@ impl Hsl {
         self.l_pct = (self.l_pct + l_delta).clamp(0.0, 100.0);
         round_hsl_1e10(self)
     }
+
+    pub fn parse_from(s: &str) -> Option<Hsl> {
+        let inner = s.trim().strip_prefix("hsl(")?.strip_suffix(')')?;
+        let mut parts = inner.split(',').map(|p| p.trim());
+        let h_deg = parts.next()?.parse::<f64>().ok()?;
+        let s_pct = parts
+            .next()?
+            .strip_suffix('%')
+            .unwrap_or_default()
+            .parse::<f64>()
+            .ok()?;
+        let l_pct = parts
+            .next()?
+            .strip_suffix('%')
+            .unwrap_or_default()
+            .parse::<f64>()
+            .ok()?;
+        Some(Hsl {
+            h_deg,
+            s_pct,
+            l_pct,
+        })
+    }
 }
