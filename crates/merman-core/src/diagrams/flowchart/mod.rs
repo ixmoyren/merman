@@ -6,8 +6,8 @@ use std::collections::HashMap;
 
 lalrpop_util::lalrpop_mod!(
     #[allow(clippy::type_complexity, clippy::result_large_err)]
-    flowchart_grammar,
-    "/diagrams/flowchart_grammar.rs"
+    grammar,
+    "/diagrams/flowchart/grammar.rs"
 );
 
 mod accessibility;
@@ -35,8 +35,8 @@ pub(crate) use model::{
 };
 
 pub(crate) use ast::{
-    ClassAssignStmt, ClassDefStmt, ClickAction, ClickStmt, FlowchartAst, LinkStylePos,
-    LinkStyleStmt, Stmt, StyleStmt, SubgraphBlock,
+    ClassAssignStmt, ClassDefStmt, ClickAction, ClickStmt, LinkStylePos, LinkStyleStmt, Stmt,
+    StyleStmt, SubgraphBlock,
 };
 
 pub(crate) use tokens::{LexError, NodeLabelToken, Tok};
@@ -62,7 +62,7 @@ pub(crate) struct FlowSubGraph {
 
 pub fn parse_flowchart(code: &str, meta: &ParseMetadata) -> Result<Value> {
     let (code, acc_title, acc_descr) = extract_flowchart_accessibility_statements(code);
-    let ast = flowchart_grammar::FlowchartAstParser::new()
+    let ast = grammar::FlowchartAstParser::new()
         .parse(Lexer::new(&code))
         .map_err(|e| Error::DiagramParse {
             diagram_type: meta.diagram_type.clone(),
@@ -231,7 +231,7 @@ pub fn parse_flowchart_model_for_render(
     meta: &ParseMetadata,
 ) -> Result<FlowchartV2Model> {
     let (code, acc_title, acc_descr) = extract_flowchart_accessibility_statements(code);
-    let ast = flowchart_grammar::FlowchartAstParser::new()
+    let ast = grammar::FlowchartAstParser::new()
         .parse(Lexer::new(&code))
         .map_err(|e| Error::DiagramParse {
             diagram_type: meta.diagram_type.clone(),

@@ -1,4 +1,4 @@
-lalrpop_util::lalrpop_mod!(class_grammar, "/diagrams/class_grammar.rs");
+lalrpop_util::lalrpop_mod!(grammar, "/diagrams/class/grammar.rs");
 
 pub(crate) const LINE_SOLID: i32 = 0;
 pub(crate) const LINE_DOTTED: i32 = 1;
@@ -22,6 +22,3 @@ mod parse;
 mod tests;
 
 pub use parse::{parse_class, parse_class_typed};
-
-pub(crate) use ast::{Action, Relation, RelationData};
-pub(crate) use lexer::{LexError, Tok};

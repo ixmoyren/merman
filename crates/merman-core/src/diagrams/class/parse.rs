@@ -2,9 +2,9 @@ use crate::models::class_diagram as class_typed;
 use crate::{Error, ParseMetadata, Result};
 use serde_json::Value;
 
-use super::class_grammar;
 use super::db::ClassDb;
 use super::fast::parse_class_fast_db;
+use super::grammar;
 use super::lexer::Lexer;
 
 fn prefer_fast_class_parser() -> bool {
@@ -20,7 +20,7 @@ pub(super) fn parse_class_via_lalrpop_db<'a>(
     code: &str,
     meta: &'a ParseMetadata,
 ) -> Result<ClassDb<'a>> {
-    let actions = class_grammar::ActionsParser::new()
+    let actions = grammar::ActionsParser::new()
         .parse(Lexer::new(code))
         .map_err(|e| Error::DiagramParse {
             diagram_type: meta.diagram_type.clone(),

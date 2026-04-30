@@ -3,7 +3,7 @@
 grammar;
 
 use crate::diagrams::class::{
-  Action, Relation, Tok, LINE_DOTTED, LINE_SOLID, REL_AGGREGATION, REL_COMPOSITION, REL_DEPENDENCY,
+  Action, Relation, RelationData, Tok, LINE_DOTTED, LINE_SOLID, REL_AGGREGATION, REL_COMPOSITION, REL_DEPENDENCY,
   REL_EXTENSION, REL_LOLLIPOP, REL_NONE
 };
 
@@ -285,8 +285,8 @@ NamespaceClassesRest: (Vec<Action>, Vec<String>) = {
   Newlines => (Vec::new(), Vec::new()),
 };
 
-RelationStatement: crate::diagrams::class::RelationData = {
-  <a:Name> <rel:Relation> <b:Name> => crate::diagrams::class::RelationData {
+RelationStatement: RelationData = {
+  <a:Name> <rel:Relation> <b:Name> => RelationData {
     id1: a,
     id2: b,
     relation: rel,
@@ -294,7 +294,7 @@ RelationStatement: crate::diagrams::class::RelationData = {
     relation_title2: None,
     title: None,
   },
-  <a:Name> <t1:Str> <rel:Relation> <b:Name> => crate::diagrams::class::RelationData {
+  <a:Name> <t1:Str> <rel:Relation> <b:Name> => RelationData {
     id1: a,
     id2: b,
     relation: rel,
@@ -302,7 +302,7 @@ RelationStatement: crate::diagrams::class::RelationData = {
     relation_title2: None,
     title: None,
   },
-  <a:Name> <rel:Relation> <t2:Str> <b:Name> => crate::diagrams::class::RelationData {
+  <a:Name> <rel:Relation> <t2:Str> <b:Name> => RelationData {
     id1: a,
     id2: b,
     relation: rel,
@@ -310,7 +310,7 @@ RelationStatement: crate::diagrams::class::RelationData = {
     relation_title2: Some(t2),
     title: None,
   },
-  <a:Name> <t1:Str> <rel:Relation> <t2:Str> <b:Name> => crate::diagrams::class::RelationData {
+  <a:Name> <t1:Str> <rel:Relation> <t2:Str> <b:Name> => RelationData {
     id1: a,
     id2: b,
     relation: rel,

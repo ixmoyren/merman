@@ -1,7 +1,7 @@
 lalrpop_util::lalrpop_mod!(
     #[allow(clippy::type_complexity, clippy::result_large_err)]
-    sequence_grammar,
-    "/diagrams/sequence_grammar.rs"
+    grammar,
+    "/diagrams/sequence/grammar.rs"
 );
 
 // Mermaid 11.12.x sequence diagram constants (SequenceDB.LINETYPE / PLACEMENT).
@@ -38,6 +38,5 @@ mod lexer;
 mod parse;
 
 pub(crate) use ast::Action;
-pub(crate) use lexer::{LexError, Tok};
 
 pub use parse::parse_sequence;

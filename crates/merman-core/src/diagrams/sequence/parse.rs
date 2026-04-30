@@ -2,8 +2,8 @@ use crate::{Error, ParseMetadata, Result};
 use serde_json::Value;
 
 use super::db::{SequenceDb, fast_parse_sequence_signals_only};
+use super::grammar;
 use super::lexer::Lexer;
-use super::sequence_grammar;
 
 pub fn parse_sequence(code: &str, meta: &ParseMetadata) -> Result<Value> {
     let wrap_enabled = meta
@@ -23,7 +23,7 @@ pub fn parse_sequence(code: &str, meta: &ParseMetadata) -> Result<Value> {
         return Ok(v);
     }
 
-    let actions = sequence_grammar::ActionsParser::new()
+    let actions = grammar::ActionsParser::new()
         .parse(Lexer::new(code))
         .map_err(|e| Error::DiagramParse {
             diagram_type: meta.diagram_type.clone(),
