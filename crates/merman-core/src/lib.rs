@@ -10,6 +10,7 @@
 //! - deterministic, testable outputs (semantic snapshot goldens)
 //! - runtime-agnostic async APIs (no specific executor required)
 
+pub mod color;
 pub mod common;
 pub mod common_db;
 pub mod config;

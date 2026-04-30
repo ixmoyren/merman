@@ -26,4 +26,34 @@ pub enum Error {
 
     #[error("Invalid YAML front-matter: {message}")]
     InvalidFrontMatterYaml { message: String },
+
+    #[error("RGB must start with \"#\"")]
+    InvalidRGBFormat,
+
+    #[error("RGB values cannot be converted to u8")]
+    InvalidRGBValue,
+
+    #[error("The RGB expression has no corresponding prefix: {prefix}")]
+    InvalidRGBExpressionPrefix { prefix: String },
+
+    #[error("The RGB expression has no corresponding suffix: {suffix}")]
+    InvalidRGBExpressionSuffix { suffix: String },
+
+    #[error("The RGB expression has too much value")]
+    InvalidRGBExpressionTooMuchValue,
+
+    #[error("The RGB expression value cannot be converted to f64")]
+    InvalidRGBExpressionValue,
+
+    #[error("The hsl expression has no corresponding prefix: {prefix}")]
+    InvalidHslExpressionPrefix { prefix: String },
+
+    #[error("The hsl expression has no corresponding suffix: {suffix}")]
+    InvalidHslExpressionSuffix { suffix: String },
+
+    #[error("The hsl expression has too much value")]
+    InvalidHslExpressionTooMuchValue,
+
+    #[error("The hsl expression value cannot be converted to f64")]
+    InvalidHslExpressionValue,
 }

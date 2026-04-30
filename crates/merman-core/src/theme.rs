@@ -1,184 +1,6 @@
 use crate::MermaidConfig;
-use ryu_js::Buffer;
+use crate::color::{Hsl, Rgb};
 use serde_json::{Map, Value};
-
-#[derive(Debug, Clone, Copy)]
-struct Rgb01 {
-    r: f64,
-    g: f64,
-    b: f64,
-}
-
-#[derive(Debug, Clone, Copy)]
-struct Hsl {
-    h_deg: f64,
-    s_pct: f64,
-    l_pct: f64,
-}
-
-fn round_1e10(v: f64) -> f64 {
-    let v = (v * 1e10).round() / 1e10;
-    if v == -0.0 { 0.0 } else { v }
-}
-
-fn fmt_js_1e10(v: f64) -> String {
-    let v = round_1e10(v);
-    let mut b = Buffer::new();
-    b.format_finite(v).to_string()
-}
-
-fn round_hsl_1e10(mut hsl: Hsl) -> Hsl {
-    // Match Mermaid's base theme output: wrap using remainder without forcing positive hue.
-    // (JS `%` keeps the sign, so negative hues remain negative.)
-    hsl.h_deg = round_1e10(hsl.h_deg) % 360.0;
-    hsl.s_pct = round_1e10(hsl.s_pct).clamp(0.0, 100.0);
-    hsl.l_pct = round_1e10(hsl.l_pct).clamp(0.0, 100.0);
-    hsl
-}
-
-fn parse_hex_rgb01(s: &str) -> Option<Rgb01> {
-    let s = s.trim();
-    let hex = s.strip_prefix('#')?;
-    let (r, g, b) = match hex.len() {
-        3 => {
-            let r = u8::from_str_radix(&hex[0..1].repeat(2), 16).ok()?;
-            let g = u8::from_str_radix(&hex[1..2].repeat(2), 16).ok()?;
-            let b = u8::from_str_radix(&hex[2..3].repeat(2), 16).ok()?;
-            (r, g, b)
-        }
-        6 => {
-            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
-            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
-            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-            (r, g, b)
-        }
-        _ => return None,
-    };
-    Some(Rgb01 {
-        r: (r as f64) / 255.0,
-        g: (g as f64) / 255.0,
-        b: (b as f64) / 255.0,
-    })
-}
-
-fn rgb01_to_hex(rgb: Rgb01) -> String {
-    let r = (rgb.r.clamp(0.0, 1.0) * 255.0).round() as i64;
-    let g = (rgb.g.clamp(0.0, 1.0) * 255.0).round() as i64;
-    let b = (rgb.b.clamp(0.0, 1.0) * 255.0).round() as i64;
-    format!(
-        "#{:02x}{:02x}{:02x}",
-        r.clamp(0, 255),
-        g.clamp(0, 255),
-        b.clamp(0, 255)
-    )
-}
-
-fn rgb01_to_hsl(rgb: Rgb01) -> Hsl {
-    let r = rgb.r;
-    let g = rgb.g;
-    let b = rgb.b;
-    let max = r.max(g).max(b);
-    let min = r.min(g).min(b);
-    let l = (max + min) / 2.0;
-
-    if max == min {
-        return round_hsl_1e10(Hsl {
-            h_deg: 0.0,
-            s_pct: 0.0,
-            l_pct: l * 100.0,
-        });
-    }
-
-    let d = max - min;
-    let s = if l > 0.5 {
-        d / (2.0 - max - min)
-    } else {
-        d / (max + min)
-    };
-    let mut h = if max == r {
-        (g - b) / d + if g < b { 6.0 } else { 0.0 }
-    } else if max == g {
-        (b - r) / d + 2.0
-    } else {
-        (r - g) / d + 4.0
-    };
-    h /= 6.0;
-
-    round_hsl_1e10(Hsl {
-        h_deg: h * 360.0,
-        s_pct: s * 100.0,
-        l_pct: l * 100.0,
-    })
-}
-
-fn adjust_hsl(mut hsl: Hsl, h_delta: f64, s_delta: f64, l_delta: f64) -> Hsl {
-    hsl.h_deg = (hsl.h_deg + h_delta) % 360.0;
-    hsl.s_pct = (hsl.s_pct + s_delta).clamp(0.0, 100.0);
-    hsl.l_pct = (hsl.l_pct + l_delta).clamp(0.0, 100.0);
-    round_hsl_1e10(hsl)
-}
-
-fn fmt_hsl(hsl: Hsl) -> String {
-    format!(
-        "hsl({}, {}%, {}%)",
-        fmt_js_1e10(hsl.h_deg),
-        fmt_js_1e10(hsl.s_pct),
-        fmt_js_1e10(hsl.l_pct)
-    )
-}
-
-fn hsl_to_rgb01(hsl: Hsl) -> Rgb01 {
-    let h = (hsl.h_deg / 360.0) % 1.0;
-    let s = (hsl.s_pct / 100.0).clamp(0.0, 1.0);
-    let l = (hsl.l_pct / 100.0).clamp(0.0, 1.0);
-
-    if s == 0.0 {
-        return Rgb01 { r: l, g: l, b: l };
-    }
-
-    fn hue_to_rgb(p: f64, q: f64, mut t: f64) -> f64 {
-        if t < 0.0 {
-            t += 1.0;
-        }
-        if t > 1.0 {
-            t -= 1.0;
-        }
-        if t < 1.0 / 6.0 {
-            return p + (q - p) * 6.0 * t;
-        }
-        if t < 1.0 / 2.0 {
-            return q;
-        }
-        if t < 2.0 / 3.0 {
-            return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
-        }
-        p
-    }
-
-    let q = if l < 0.5 {
-        l * (1.0 + s)
-    } else {
-        l + s - l * s
-    };
-    let p = 2.0 * l - q;
-    Rgb01 {
-        r: hue_to_rgb(p, q, h + 1.0 / 3.0),
-        g: hue_to_rgb(p, q, h),
-        b: hue_to_rgb(p, q, h - 1.0 / 3.0),
-    }
-}
-
-fn invert_rgb01_to_rgb_string(rgb: Rgb01) -> String {
-    let r = round_1e10((1.0 - rgb.r) * 255.0);
-    let g = round_1e10((1.0 - rgb.g) * 255.0);
-    let b = round_1e10((1.0 - rgb.b) * 255.0);
-    format!(
-        "rgb({}, {}, {})",
-        fmt_js_1e10(r),
-        fmt_js_1e10(g),
-        fmt_js_1e10(b)
-    )
-}
 
 fn get_truthy_string(map: &Map<String, Value>, key: &str) -> Option<String> {
     map.get(key)
@@ -277,19 +99,25 @@ fn apply_dark_theme_defaults(config: &mut MermaidConfig) {
         "primaryColor",
         Value::String("#1f2020".to_string()),
     );
-    if get_truthy_string(&tv, "primaryTextColor").is_none() {
-        if let Some(primary_color) = get_truthy_string(&tv, "primaryColor") {
-            if let Some(rgb) = parse_hex_rgb01(&primary_color) {
-                tv.insert(
-                    "primaryTextColor".to_string(),
-                    Value::String(rgb01_to_hex(Rgb01 {
-                        r: 1.0 - rgb.r,
-                        g: 1.0 - rgb.g,
-                        b: 1.0 - rgb.b,
-                    })),
-                );
-            }
-        }
+    if get_truthy_string(&tv, "primaryTextColor").is_none()
+        && let Some(primary_color) = get_truthy_string(&tv, "primaryColor")
+        && let Ok(Rgb {
+            r: primary_color_r,
+            g: primary_color_g,
+            b: primary_color_b,
+        }) = Rgb::try_from(&primary_color)
+    {
+        tv.insert(
+            "primaryTextColor".to_string(),
+            Value::String(
+                Rgb {
+                    r: 1.0 - primary_color_r,
+                    g: 1.0 - primary_color_g,
+                    b: 1.0 - primary_color_b,
+                }
+                .to_string(),
+            ),
+        );
     }
     set_if_missing(&mut tv, "textColor", Value::String("#ccc".to_string()));
     set_if_missing(
@@ -341,27 +169,30 @@ fn apply_dark_theme_defaults(config: &mut MermaidConfig) {
             Value::String((*c_hex).to_string()),
         );
 
-        let Some(rgb) = parse_hex_rgb01(c_hex) else {
+        let Ok(rgb) = Rgb::try_from(*c_hex) else {
             continue;
         };
-        let hsl = rgb01_to_hsl(rgb);
+        let hsl = Hsl::from(rgb);
 
         // `theme-dark` peers: `lighten(cScale, 10)`.
         set_if_missing(
             &mut tv,
             &format!("cScalePeer{i}"),
-            Value::String(fmt_hsl(adjust_hsl(hsl, 0.0, 0.0, 10.0))),
+            Value::String(hsl.adjust_hsl(0.0, 0.0, 10.0).to_string()),
         );
 
         // `theme-dark` inverted scale: `invert(cScale)`.
         set_if_missing(
             &mut tv,
             &format!("cScaleInv{i}"),
-            Value::String(rgb01_to_hex(Rgb01 {
-                r: 1.0 - rgb.r,
-                g: 1.0 - rgb.g,
-                b: 1.0 - rgb.b,
-            })),
+            Value::String(
+                Rgb {
+                    r: 1.0 - rgb.r,
+                    g: 1.0 - rgb.g,
+                    b: 1.0 - rgb.b,
+                }
+                .to_string(),
+            ),
         );
 
         // `theme-dark` label scale: `scaleLabelColor`.
@@ -439,26 +270,29 @@ fn apply_forest_theme_defaults(config: &mut MermaidConfig) {
         config.set_value("themeVariables", Value::Object(tv));
         return;
     };
-    let Some(primary_rgb) = parse_hex_rgb01(&primary_color) else {
+    let Ok(primary_rgb) = Rgb::try_from(&primary_color) else {
         config.set_value("themeVariables", Value::Object(tv));
         return;
     };
-    let primary_hsl = rgb01_to_hsl(primary_rgb);
+    let primary_hsl = Hsl::from(primary_rgb);
     if get_truthy_string(&tv, "primaryTextColor").is_none() {
         tv.insert(
             "primaryTextColor".to_string(),
-            Value::String(rgb01_to_hex(Rgb01 {
-                r: 1.0 - primary_rgb.r,
-                g: 1.0 - primary_rgb.g,
-                b: 1.0 - primary_rgb.b,
-            })),
+            Value::String(
+                Rgb {
+                    r: 1.0 - primary_rgb.r,
+                    g: 1.0 - primary_rgb.g,
+                    b: 1.0 - primary_rgb.b,
+                }
+                .to_string(),
+            ),
         );
     }
 
     let secondary_color =
         get_truthy_string(&tv, "secondaryColor").unwrap_or_else(|| "#cdffb2".to_string());
-    let secondary_hsl = parse_hex_rgb01(&secondary_color)
-        .map(rgb01_to_hsl)
+    let secondary_hsl = Rgb::try_from(&secondary_color)
+        .map(Hsl::from)
         .unwrap_or(primary_hsl);
 
     // `theme-forest` diagram-facing surfaces.
@@ -472,12 +306,12 @@ fn apply_forest_theme_defaults(config: &mut MermaidConfig) {
     set_if_missing(
         &mut tv,
         "rowOdd",
-        Value::String(fmt_hsl(adjust_hsl(primary_hsl, 0.0, 0.0, 75.0))),
+        Value::String(primary_hsl.adjust_hsl(0.0, 0.0, 75.0).to_string()),
     );
     set_if_missing(
         &mut tv,
         "rowEven",
-        Value::String(fmt_hsl(adjust_hsl(primary_hsl, 0.0, 0.0, 20.0))),
+        Value::String(primary_hsl.adjust_hsl(0.0, 0.0, 20.0).to_string()),
     );
 
     // `invert('white')` in `khroma` ends up as a pure black in Mermaid's serialized SVG output.
@@ -512,46 +346,43 @@ fn apply_forest_theme_defaults(config: &mut MermaidConfig) {
     set_if_missing(
         &mut tv,
         "primaryBorderColor",
-        Value::String(fmt_hsl(adjust_hsl(
-            primary_hsl,
-            0.0,
-            -40.0,
-            mk_border_delta_l,
-        ))),
+        Value::String(
+            primary_hsl
+                .adjust_hsl(0.0, -40.0, mk_border_delta_l)
+                .to_string(),
+        ),
     );
     set_if_missing(
         &mut tv,
         "secondaryBorderColor",
-        Value::String(fmt_hsl(adjust_hsl(
-            secondary_hsl,
-            0.0,
-            -40.0,
-            mk_border_delta_l,
-        ))),
+        Value::String(
+            secondary_hsl
+                .adjust_hsl(0.0, -40.0, mk_border_delta_l)
+                .to_string(),
+        ),
     );
 
     // `theme-forest` sets: `tertiaryColor = lighten(primaryColor, 10)`.
-    let tertiary_hsl = if let Some(v) =
-        get_truthy_string(&tv, "tertiaryColor").and_then(|s| parse_hex_rgb01(&s).map(rgb01_to_hsl))
+    let tertiary_hsl = if let Some(tertiary_color) = get_truthy_string(&tv, "tertiaryColor")
+        && let Ok(tertiary_color) = Rgb::try_from(tertiary_color)
     {
-        v
+        tertiary_color.into()
     } else {
-        adjust_hsl(primary_hsl, 0.0, 0.0, 10.0)
+        primary_hsl.adjust_hsl(0.0, 0.0, 10.0)
     };
     set_if_missing(
         &mut tv,
         "tertiaryColor",
-        Value::String(fmt_hsl(tertiary_hsl)),
+        Value::String(tertiary_hsl.to_string()),
     );
     set_if_missing(
         &mut tv,
         "tertiaryBorderColor",
-        Value::String(fmt_hsl(adjust_hsl(
-            tertiary_hsl,
-            0.0,
-            -40.0,
-            mk_border_delta_l,
-        ))),
+        Value::String(
+            tertiary_hsl
+                .adjust_hsl(0.0, -40.0, mk_border_delta_l)
+                .to_string(),
+        ),
     );
 
     // `theme-forest` ends up using black label text (via `actorTextColor`).
@@ -576,43 +407,43 @@ fn apply_forest_theme_defaults(config: &mut MermaidConfig) {
         primary_hsl,
         secondary_hsl,
         tertiary_hsl,
-        adjust_hsl(primary_hsl, 30.0, 0.0, 0.0),
-        adjust_hsl(primary_hsl, 60.0, 0.0, 0.0),
-        adjust_hsl(primary_hsl, 90.0, 0.0, 0.0),
-        adjust_hsl(primary_hsl, 120.0, 0.0, 0.0),
-        adjust_hsl(primary_hsl, 150.0, 0.0, 0.0),
-        adjust_hsl(primary_hsl, 210.0, 0.0, 0.0),
-        adjust_hsl(primary_hsl, 270.0, 0.0, 0.0),
-        adjust_hsl(primary_hsl, 300.0, 0.0, 0.0),
-        adjust_hsl(primary_hsl, 330.0, 0.0, 0.0),
+        primary_hsl.adjust_hsl(30.0, 0.0, 0.0),
+        primary_hsl.adjust_hsl(60.0, 0.0, 0.0),
+        primary_hsl.adjust_hsl(90.0, 0.0, 0.0),
+        primary_hsl.adjust_hsl(120.0, 0.0, 0.0),
+        primary_hsl.adjust_hsl(150.0, 0.0, 0.0),
+        primary_hsl.adjust_hsl(210.0, 0.0, 0.0),
+        primary_hsl.adjust_hsl(270.0, 0.0, 0.0),
+        primary_hsl.adjust_hsl(300.0, 0.0, 0.0),
+        primary_hsl.adjust_hsl(330.0, 0.0, 0.0),
     ]
-    .map(|base| adjust_hsl(base, 0.0, 0.0, -10.0));
+    .map(|base| base.adjust_hsl(0.0, 0.0, -10.0));
 
     for (i, v) in c_scales.iter().enumerate() {
-        set_if_missing(&mut tv, &format!("cScale{i}"), Value::String(fmt_hsl(*v)));
+        set_if_missing(&mut tv, &format!("cScale{i}"), Value::String(v.to_string()));
     }
 
     set_if_missing(
         &mut tv,
         "cScalePeer1",
-        Value::String(fmt_hsl(adjust_hsl(secondary_hsl, 0.0, 0.0, -45.0))),
+        Value::String(secondary_hsl.adjust_hsl(0.0, 0.0, -45.0).to_string()),
     );
     set_if_missing(
         &mut tv,
         "cScalePeer2",
-        Value::String(fmt_hsl(adjust_hsl(tertiary_hsl, 0.0, 0.0, -40.0))),
+        Value::String(tertiary_hsl.adjust_hsl(0.0, 0.0, -40.0).to_string()),
     );
 
     for (i, c_hsl) in c_scales.iter().enumerate() {
         set_if_missing(
             &mut tv,
             &format!("cScalePeer{i}"),
-            Value::String(fmt_hsl(adjust_hsl(*c_hsl, 0.0, 0.0, -25.0))),
+            Value::String(c_hsl.adjust_hsl(0.0, 0.0, -25.0).to_string()),
         );
         set_if_missing(
             &mut tv,
             &format!("cScaleInv{i}"),
-            Value::String(fmt_hsl(adjust_hsl(*c_hsl, 180.0, 0.0, 0.0))),
+            Value::String(c_hsl.adjust_hsl(180.0, 0.0, 0.0).to_string()),
         );
         set_if_missing(
             &mut tv,
@@ -641,19 +472,21 @@ fn apply_neutral_theme_defaults(config: &mut MermaidConfig) {
     // Source: `repo-ref/mermaid/packages/mermaid/src/themes/theme-neutral.js`.
     set_if_missing(&mut tv, "background", Value::String("#ffffff".to_string()));
     set_if_missing(&mut tv, "primaryColor", Value::String("#eee".to_string()));
-    if get_truthy_string(&tv, "primaryTextColor").is_none() {
-        if let Some(primary_color) = get_truthy_string(&tv, "primaryColor") {
-            if let Some(rgb) = parse_hex_rgb01(&primary_color) {
-                tv.insert(
-                    "primaryTextColor".to_string(),
-                    Value::String(rgb01_to_hex(Rgb01 {
-                        r: 1.0 - rgb.r,
-                        g: 1.0 - rgb.g,
-                        b: 1.0 - rgb.b,
-                    })),
-                );
-            }
-        }
+    if get_truthy_string(&tv, "primaryTextColor").is_none()
+        && let Some(primary_color) = get_truthy_string(&tv, "primaryColor")
+        && let Ok(rgb) = Rgb::try_from(&primary_color)
+    {
+        tv.insert(
+            "primaryTextColor".to_string(),
+            Value::String(
+                Rgb {
+                    r: 1.0 - rgb.r,
+                    g: 1.0 - rgb.g,
+                    b: 1.0 - rgb.b,
+                }
+                .to_string(),
+            ),
+        );
     }
 
     // Mermaid 11.12.2: `theme-neutral` color scale seeds.
@@ -679,27 +512,30 @@ fn apply_neutral_theme_defaults(config: &mut MermaidConfig) {
             Value::String((*c_hex).to_string()),
         );
 
-        let Some(rgb) = parse_hex_rgb01(c_hex) else {
+        let Ok(rgb) = Rgb::try_from(*c_hex) else {
             continue;
         };
-        let hsl = rgb01_to_hsl(rgb);
+        let hsl = Hsl::from(rgb);
 
         // `theme-neutral` peers: `darken(cScale, 10)` (darkMode defaults to false).
         set_if_missing(
             &mut tv,
             &format!("cScalePeer{i}"),
-            Value::String(fmt_hsl(adjust_hsl(hsl, 0.0, 0.0, -10.0))),
+            Value::String(hsl.adjust_hsl(0.0, 0.0, -10.0).to_string()),
         );
 
         // `theme-neutral` inverted scale: `invert(cScale)`.
         set_if_missing(
             &mut tv,
             &format!("cScaleInv{i}"),
-            Value::String(rgb01_to_hex(Rgb01 {
-                r: 1.0 - rgb.r,
-                g: 1.0 - rgb.g,
-                b: 1.0 - rgb.b,
-            })),
+            Value::String(
+                Rgb {
+                    r: 1.0 - rgb.r,
+                    g: 1.0 - rgb.g,
+                    b: 1.0 - rgb.b,
+                }
+                .to_string(),
+            ),
         );
 
         // `theme-neutral` label scale: `scaleLabelColor`, with special-cased indices.
@@ -766,85 +602,76 @@ fn apply_base_theme_defaults(config: &mut MermaidConfig) {
     let primary_text_color = get_truthy_string(&tv, "primaryTextColor")
         .unwrap_or_else(|| if dark_mode { "#eee" } else { "#333" }.to_string());
 
-    let primary_hsl = parse_hex_rgb01(&primary_color)
-        .map(rgb01_to_hsl)
-        .unwrap_or(Hsl {
-            h_deg: 0.0,
-            s_pct: 0.0,
-            l_pct: 100.0,
-        });
+    let primary_hsl = Rgb::try_from(&primary_color).map(Hsl::from).unwrap_or(Hsl {
+        h_deg: 0.0,
+        s_pct: 0.0,
+        l_pct: 100.0,
+    });
 
-    let secondary_hsl = if let Some(v) =
-        get_truthy_string(&tv, "secondaryColor").and_then(|s| parse_hex_rgb01(&s).map(rgb01_to_hsl))
+    let secondary_hsl = if let Some(v) = get_truthy_string(&tv, "secondaryColor")
+        && let Ok(secondary_color) = Rgb::try_from(v)
     {
-        v
+        secondary_color.into()
     } else {
-        adjust_hsl(primary_hsl, -120.0, 0.0, 0.0)
+        primary_hsl.adjust_hsl(-120.0, 0.0, 0.0)
     };
     set_if_missing(
         &mut tv,
         "secondaryColor",
-        Value::String(fmt_hsl(secondary_hsl)),
+        Value::String(secondary_hsl.to_string()),
     );
 
-    let tertiary_hsl = if let Some(v) =
-        get_truthy_string(&tv, "tertiaryColor").and_then(|s| parse_hex_rgb01(&s).map(rgb01_to_hsl))
+    let tertiary_hsl = if let Some(v) = get_truthy_string(&tv, "tertiaryColor")
+        && let Ok(tertiary_color) = Rgb::try_from(v)
     {
-        v
+        tertiary_color.into()
     } else {
-        adjust_hsl(primary_hsl, 180.0, 0.0, 5.0)
+        primary_hsl.adjust_hsl(180.0, 0.0, 5.0)
     };
     set_if_missing(
         &mut tv,
         "tertiaryColor",
-        Value::String(fmt_hsl(tertiary_hsl)),
+        Value::String(tertiary_hsl.to_string()),
     );
 
     let primary_border_hsl = if get_truthy_string(&tv, "primaryBorderColor").is_some() {
         None
     } else {
-        Some(adjust_hsl(
-            primary_hsl,
-            0.0,
-            -40.0,
-            if dark_mode { 10.0 } else { -10.0 },
-        ))
+        Some(primary_hsl.adjust_hsl(0.0, -40.0, if dark_mode { 10.0 } else { -10.0 }))
     };
     if let Some(hsl) = primary_border_hsl {
         tv.insert(
             "primaryBorderColor".to_string(),
-            Value::String(fmt_hsl(hsl)),
+            Value::String(hsl.to_string()),
         );
     }
 
     let tertiary_border_hsl = if get_truthy_string(&tv, "tertiaryBorderColor").is_some() {
         None
     } else {
-        Some(adjust_hsl(
-            tertiary_hsl,
-            0.0,
-            -40.0,
-            if dark_mode { 10.0 } else { -10.0 },
-        ))
+        Some(tertiary_hsl.adjust_hsl(0.0, -40.0, if dark_mode { 10.0 } else { -10.0 }))
     };
     if let Some(hsl) = tertiary_border_hsl {
         tv.insert(
             "tertiaryBorderColor".to_string(),
-            Value::String(fmt_hsl(hsl)),
+            Value::String(hsl.to_string()),
         );
     }
 
-    if get_truthy_string(&tv, "lineColor").is_none() {
-        if let Some(bg_rgb) = parse_hex_rgb01(&background) {
-            tv.insert(
-                "lineColor".to_string(),
-                Value::String(rgb01_to_hex(Rgb01 {
+    if get_truthy_string(&tv, "lineColor").is_none()
+        && let Ok(bg_rgb) = Rgb::try_from(&background)
+    {
+        tv.insert(
+            "lineColor".to_string(),
+            Value::String(
+                Rgb {
                     r: 1.0 - bg_rgb.r,
                     g: 1.0 - bg_rgb.g,
                     b: 1.0 - bg_rgb.b,
-                })),
-            );
-        }
+                }
+                .to_string(),
+            ),
+        );
     }
     let line_color = get_truthy_string(&tv, "lineColor").unwrap_or_else(|| "#333333".to_string());
     set_if_missing(&mut tv, "arrowheadColor", Value::String(line_color));
@@ -874,10 +701,10 @@ fn apply_base_theme_defaults(config: &mut MermaidConfig) {
     set_if_missing(&mut tv, "nodeTextColor", Value::String(primary_text_color));
 
     if get_truthy_string(&tv, "tertiaryTextColor").is_none() {
-        let rgb = hsl_to_rgb01(tertiary_hsl);
+        let rgb = Rgb::from(tertiary_hsl);
         tv.insert(
             "tertiaryTextColor".to_string(),
-            Value::String(invert_rgb01_to_rgb_string(rgb)),
+            Value::String(rgb.invert_rgb_to_rgb_string()),
         );
     }
     let tertiary_text_color =
@@ -891,9 +718,12 @@ fn apply_base_theme_defaults(config: &mut MermaidConfig) {
     if get_truthy_string(&tv, "edgeLabelBackground").is_none() {
         let mut v = secondary_hsl;
         if dark_mode {
-            v = adjust_hsl(v, 0.0, 0.0, -30.0);
+            v = secondary_hsl.adjust_hsl(0.0, 0.0, -30.0);
         }
-        tv.insert("edgeLabelBackground".to_string(), Value::String(fmt_hsl(v)));
+        tv.insert(
+            "edgeLabelBackground".to_string(),
+            Value::String(v.to_string()),
+        );
     }
 
     set_if_missing(&mut tv, "errorBkgColor", Value::String(tertiary_color));
@@ -910,18 +740,18 @@ fn apply_base_theme_defaults(config: &mut MermaidConfig) {
         ("cScale0", primary_hsl),
         ("cScale1", secondary_hsl),
         ("cScale2", tertiary_hsl),
-        ("cScale3", adjust_hsl(primary_hsl, 30.0, 0.0, 0.0)),
-        ("cScale4", adjust_hsl(primary_hsl, 60.0, 0.0, 0.0)),
-        ("cScale5", adjust_hsl(primary_hsl, 90.0, 0.0, 0.0)),
-        ("cScale6", adjust_hsl(primary_hsl, 120.0, 0.0, 0.0)),
-        ("cScale7", adjust_hsl(primary_hsl, 150.0, 0.0, 0.0)),
-        ("cScale8", adjust_hsl(primary_hsl, 210.0, 0.0, 150.0)),
-        ("cScale9", adjust_hsl(primary_hsl, 270.0, 0.0, 0.0)),
-        ("cScale10", adjust_hsl(primary_hsl, 300.0, 0.0, 0.0)),
-        ("cScale11", adjust_hsl(primary_hsl, 330.0, 0.0, 0.0)),
+        ("cScale3", primary_hsl.adjust_hsl(30.0, 0.0, 0.0)),
+        ("cScale4", primary_hsl.adjust_hsl(60.0, 0.0, 0.0)),
+        ("cScale5", primary_hsl.adjust_hsl(90.0, 0.0, 0.0)),
+        ("cScale6", primary_hsl.adjust_hsl(120.0, 0.0, 0.0)),
+        ("cScale7", primary_hsl.adjust_hsl(150.0, 0.0, 0.0)),
+        ("cScale8", primary_hsl.adjust_hsl(210.0, 0.0, 150.0)),
+        ("cScale9", primary_hsl.adjust_hsl(270.0, 0.0, 0.0)),
+        ("cScale10", primary_hsl.adjust_hsl(300.0, 0.0, 0.0)),
+        ("cScale11", primary_hsl.adjust_hsl(330.0, 0.0, 0.0)),
     ] {
-        let v = adjust_hsl(base, 0.0, 0.0, -darken_amount);
-        set_if_missing(&mut tv, key, Value::String(fmt_hsl(v)));
+        let v = base.adjust_hsl(0.0, 0.0, -darken_amount);
+        set_if_missing(&mut tv, key, Value::String(v.to_string()));
     }
 
     // Diagram style defaults (themeVariables.radar.*).
