@@ -22,3 +22,6 @@ mod parse;
 mod tests;
 
 pub use parse::{parse_class, parse_class_typed};
+
+pub(crate) use ast::{Action, Relation, RelationData};
+pub(crate) use lexer::{LexError, Tok};

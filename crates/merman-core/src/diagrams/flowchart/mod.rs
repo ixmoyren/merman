@@ -35,8 +35,8 @@ pub(crate) use model::{
 };
 
 pub(crate) use ast::{
-    ClassAssignStmt, ClassDefStmt, ClickAction, ClickStmt, LinkStylePos, LinkStyleStmt, Stmt,
-    StyleStmt, SubgraphBlock,
+    ClassAssignStmt, ClassDefStmt, ClickAction, ClickStmt, FlowchartAst, LinkStylePos,
+    LinkStyleStmt, Stmt, StyleStmt, SubgraphBlock,
 };
 
 pub(crate) use tokens::{LexError, NodeLabelToken, Tok};

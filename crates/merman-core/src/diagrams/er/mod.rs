@@ -2,7 +2,7 @@ use crate::{Error, ParseMetadata, Result};
 use serde_json::{Value, json};
 use std::collections::{HashMap, VecDeque};
 
-lalrpop_util::lalrpop_mod!(er_grammar, "/diagrams/er_grammar.rs");
+lalrpop_util::lalrpop_mod!(grammar, "/diagrams/er/grammar.rs");
 
 #[derive(Debug, Clone)]
 struct Attribute {
@@ -329,7 +329,7 @@ fn split_styles(raw: &str) -> Vec<String> {
 }
 
 pub fn parse_er(code: &str, meta: &ParseMetadata) -> Result<Value> {
-    let actions = er_grammar::ActionsParser::new()
+    let actions = grammar::ActionsParser::new()
         .parse(Lexer::new(code))
         .map_err(|e| Error::DiagramParse {
             diagram_type: meta.diagram_type.clone(),

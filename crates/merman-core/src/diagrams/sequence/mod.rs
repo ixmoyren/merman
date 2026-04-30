@@ -38,5 +38,6 @@ mod lexer;
 mod parse;
 
 pub(crate) use ast::Action;
+pub(crate) use lexer::{LexError, Tok};
 
 pub use parse::parse_sequence;
