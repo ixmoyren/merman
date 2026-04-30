@@ -5,7 +5,7 @@ use super::db::StateDb;
 use super::{Lexer, StateDiagramRenderModel, Stmt};
 
 pub fn parse_state(code: &str, meta: &ParseMetadata) -> Result<Value> {
-    let mut doc = super::state_grammar::RootParser::new()
+    let mut doc = super::grammar::RootParser::new()
         .parse(Lexer::new(code))
         .map_err(|e| Error::DiagramParse {
             diagram_type: meta.diagram_type.clone(),
@@ -21,7 +21,7 @@ pub fn parse_state(code: &str, meta: &ParseMetadata) -> Result<Value> {
 }
 
 pub fn parse_state_for_render(code: &str, meta: &ParseMetadata) -> Result<Value> {
-    let mut doc = super::state_grammar::RootParser::new()
+    let mut doc = super::grammar::RootParser::new()
         .parse(Lexer::new(code))
         .map_err(|e| Error::DiagramParse {
             diagram_type: meta.diagram_type.clone(),
@@ -40,7 +40,7 @@ pub fn parse_state_model_for_render(
     code: &str,
     meta: &ParseMetadata,
 ) -> Result<StateDiagramRenderModel> {
-    let mut doc = super::state_grammar::RootParser::new()
+    let mut doc = super::grammar::RootParser::new()
         .parse(Lexer::new(code))
         .map_err(|e| Error::DiagramParse {
             diagram_type: meta.diagram_type.clone(),

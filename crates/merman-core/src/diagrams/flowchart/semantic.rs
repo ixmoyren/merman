@@ -2,7 +2,6 @@ use crate::sanitize::sanitize_text;
 use crate::utils::format_url;
 use crate::{Error, MermaidConfig, Result};
 use indexmap::IndexMap;
-use std::collections::HashMap;
 
 use super::{
     ClickAction, Edge, EdgeDefaults, FlowSubGraph, LinkStylePos, Node, Stmt, TitleKind,
@@ -13,12 +12,12 @@ use super::{
 pub(super) fn apply_semantic_statements(
     statements: &[Stmt],
     nodes: &mut Vec<Node>,
-    node_index: &mut HashMap<String, usize>,
+    node_index: &mut IndexMap<String, usize>,
     edges: &mut Vec<Edge>,
     subgraphs: &mut Vec<FlowSubGraph>,
-    subgraph_index: &mut HashMap<String, usize>,
+    subgraph_index: &mut IndexMap<String, usize>,
     class_defs: &mut IndexMap<String, Vec<String>>,
-    tooltips: &mut HashMap<String, String>,
+    tooltips: &mut IndexMap<String, String>,
     edge_defaults: &mut EdgeDefaults,
     security_level_loose: bool,
     diagram_type: &str,
@@ -42,13 +41,12 @@ pub(super) fn apply_semantic_statements(
                     config,
                 )?;
             }
+            Stmt::Style(s) if let Some(&idx) = subgraph_index.get(&s.target) => {
+                subgraphs[idx].styles.extend(s.styles.iter().cloned());
+            }
             Stmt::Style(s) => {
-                if let Some(&idx) = subgraph_index.get(&s.target) {
-                    subgraphs[idx].styles.extend(s.styles.iter().cloned());
-                } else {
-                    let idx = ensure_node(nodes, node_index, &s.target);
-                    nodes[idx].styles.extend(s.styles.iter().cloned());
-                }
+                let idx = ensure_node(nodes, node_index, &s.target);
+                nodes[idx].styles.extend(s.styles.iter().cloned());
             }
             Stmt::ClassDef(c) => {
                 for id in &c.ids {
@@ -84,19 +82,18 @@ pub(super) fn apply_semantic_statements(
                     );
 
                     match &c.action {
-                        ClickAction::Link { href, target } => {
-                            if let Some(&idx) = node_index.get(id) {
-                                nodes[idx].link = format_url(href, config);
-                                nodes[idx].link_target = target.clone();
-                            }
+                        ClickAction::Link { href, target }
+                            if let Some(&idx) = node_index.get(id) =>
+                        {
+                            nodes[idx].link = format_url(href, config);
+                            nodes[idx].link_target = target.clone();
                         }
-                        ClickAction::Callback { .. } => {
-                            if security_level_loose {
-                                if let Some(&idx) = node_index.get(id) {
-                                    nodes[idx].have_callback = true;
-                                }
-                            }
+                        ClickAction::Callback { .. }
+                            if security_level_loose && let Some(&idx) = node_index.get(id) =>
+                        {
+                            nodes[idx].have_callback = true;
                         }
+                        _ => (),
                     }
                 }
             }
@@ -105,16 +102,16 @@ pub(super) fn apply_semantic_statements(
                     for pos in &ls.positions {
                         match pos {
                             LinkStylePos::Default => edge_defaults.interpolate = Some(algo.clone()),
+                            LinkStylePos::Index(i) if *i >= edges.len() => {
+                                return Err(Error::DiagramParse {
+                                    diagram_type: diagram_type.to_string(),
+                                    message: format!(
+                                        "The index {i} for linkStyle is out of bounds. Valid indices for linkStyle are between 0 and {}. (Help: Ensure that the index is within the range of existing edges.)",
+                                        edges.len().saturating_sub(1)
+                                    ),
+                                });
+                            }
                             LinkStylePos::Index(i) => {
-                                if *i >= edges.len() {
-                                    return Err(Error::DiagramParse {
-                                        diagram_type: diagram_type.to_string(),
-                                        message: format!(
-                                            "The index {i} for linkStyle is out of bounds. Valid indices for linkStyle are between 0 and {}. (Help: Ensure that the index is within the range of existing edges.)",
-                                            edges.len().saturating_sub(1)
-                                        ),
-                                    });
-                                }
                                 edges[*i].interpolate = Some(algo.clone());
                             }
                         }
@@ -125,16 +122,16 @@ pub(super) fn apply_semantic_statements(
                     for pos in &ls.positions {
                         match pos {
                             LinkStylePos::Default => edge_defaults.style = ls.styles.clone(),
+                            LinkStylePos::Index(i) if *i >= edges.len() => {
+                                return Err(Error::DiagramParse {
+                                    diagram_type: diagram_type.to_string(),
+                                    message: format!(
+                                        "The index {i} for linkStyle is out of bounds. Valid indices for linkStyle are between 0 and {}. (Help: Ensure that the index is within the range of existing edges.)",
+                                        edges.len().saturating_sub(1)
+                                    ),
+                                });
+                            }
                             LinkStylePos::Index(i) => {
-                                if *i >= edges.len() {
-                                    return Err(Error::DiagramParse {
-                                        diagram_type: diagram_type.to_string(),
-                                        message: format!(
-                                            "The index {i} for linkStyle is out of bounds. Valid indices for linkStyle are between 0 and {}. (Help: Ensure that the index is within the range of existing edges.)",
-                                            edges.len().saturating_sub(1)
-                                        ),
-                                    });
-                                }
                                 edges[*i].style = ls.styles.clone();
                                 if !edges[*i].style.is_empty()
                                     && !edges[*i]
@@ -210,10 +207,10 @@ pub(super) fn apply_semantic_statements(
 
 fn add_class_to_target(
     nodes: &mut [Node],
-    node_index: &HashMap<String, usize>,
+    node_index: &IndexMap<String, usize>,
     edges: &mut [Edge],
     subgraphs: &mut [FlowSubGraph],
-    subgraph_index: &HashMap<String, usize>,
+    subgraph_index: &IndexMap<String, usize>,
     target: &str,
     class_name: &str,
 ) {
@@ -230,7 +227,7 @@ fn add_class_to_target(
     }
 }
 
-fn ensure_node(nodes: &mut Vec<Node>, node_index: &mut HashMap<String, usize>, id: &str) -> usize {
+fn ensure_node(nodes: &mut Vec<Node>, node_index: &mut IndexMap<String, usize>, id: &str) -> usize {
     if let Some(&idx) = node_index.get(id) {
         return idx;
     }

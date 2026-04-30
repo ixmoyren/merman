@@ -2,7 +2,6 @@ use crate::sanitize::sanitize_text;
 use crate::{Error, ParseMetadata, Result};
 use indexmap::IndexMap;
 use serde_json::{Value, json};
-use std::collections::HashMap;
 
 lalrpop_util::lalrpop_mod!(
     #[allow(clippy::type_complexity, clippy::result_large_err)]
@@ -95,18 +94,18 @@ pub fn parse_flowchart(code: &str, meta: &ParseMetadata) -> Result<Value> {
     let mut builder = SubgraphBuilder::new(inherit_dir, ast.direction.clone());
     builder.visit_statements(&ast.statements);
 
-    let mut class_defs: IndexMap<String, Vec<String>> = IndexMap::new();
-    let mut tooltips: HashMap<String, String> = HashMap::new();
+    let mut class_defs = IndexMap::<String, Vec<String>>::new();
+    let mut tooltips = IndexMap::<String, String>::new();
     let mut edge_defaults = EdgeDefaults {
         style: Vec::new(),
         interpolate: None,
     };
 
-    let mut node_index: HashMap<String, usize> = HashMap::new();
+    let mut node_index = IndexMap::<String, usize>::new();
     for (idx, n) in nodes.iter().enumerate() {
         node_index.insert(n.id.clone(), idx);
     }
-    let mut subgraph_index: HashMap<String, usize> = HashMap::new();
+    let mut subgraph_index = IndexMap::<String, usize>::new();
     for (idx, sg) in builder.subgraphs.iter().enumerate() {
         subgraph_index.insert(sg.id.clone(), idx);
     }
@@ -162,7 +161,7 @@ pub fn parse_flowchart(code: &str, meta: &ParseMetadata) -> Result<Value> {
         "accTitle": acc_title,
         "accDescr": acc_descr,
         "classDefs": class_defs,
-        "tooltips": tooltips.into_iter().collect::<HashMap<_, _>>(),
+        "tooltips": tooltips.into_iter().collect::<IndexMap<_, _>>(),
         "edgeDefaults": {
             "style": edge_defaults.style,
             "interpolate": edge_defaults.interpolate,
@@ -264,18 +263,18 @@ pub fn parse_flowchart_model_for_render(
     let mut builder = SubgraphBuilder::new(inherit_dir, ast.direction.clone());
     builder.visit_statements(&ast.statements);
 
-    let mut class_defs: IndexMap<String, Vec<String>> = IndexMap::new();
-    let mut tooltips: HashMap<String, String> = HashMap::new();
+    let mut class_defs = IndexMap::<String, Vec<String>>::new();
+    let mut tooltips = IndexMap::<String, String>::new();
     let mut edge_defaults = EdgeDefaults {
         style: Vec::new(),
         interpolate: None,
     };
 
-    let mut node_index: HashMap<String, usize> = HashMap::new();
+    let mut node_index = IndexMap::<String, usize>::new();
     for (idx, n) in nodes.iter().enumerate() {
         node_index.insert(n.id.clone(), idx);
     }
-    let mut subgraph_index: HashMap<String, usize> = HashMap::new();
+    let mut subgraph_index = IndexMap::<String, usize>::new();
     for (idx, sg) in builder.subgraphs.iter().enumerate() {
         subgraph_index.insert(sg.id.clone(), idx);
     }
@@ -457,8 +456,8 @@ fn collect_nodes_and_edges(statements: &[Stmt], nodes: &mut Vec<Node>, edges: &m
 
 #[allow(dead_code)]
 fn merge_nodes_and_edges(nodes: Vec<Node>, edges: Vec<Edge>) -> (Vec<Node>, Vec<Edge>) {
-    let mut nodes_by_id: HashMap<String, usize> = HashMap::new();
-    let mut merged: Vec<Node> = Vec::new();
+    let mut nodes_by_id = IndexMap::<String, usize>::new();
+    let mut merged = Vec::<Node>::new();
     for n in nodes {
         if let Some(&idx) = nodes_by_id.get(&n.id) {
             if n.label.is_some() {

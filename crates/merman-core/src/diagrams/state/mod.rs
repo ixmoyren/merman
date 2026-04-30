@@ -17,8 +17,8 @@ pub(crate) use ast::{ClickStmt, Note, StateStmt, Stmt};
 
 lalrpop_util::lalrpop_mod!(
     #[allow(clippy::filter_map_identity)]
-    state_grammar,
-    "/diagrams/state_grammar.rs"
+    grammar,
+    "/diagrams/state/grammar.rs"
 );
 
 #[derive(Debug, Clone)]
