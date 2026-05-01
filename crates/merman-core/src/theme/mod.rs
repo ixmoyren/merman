@@ -1,83 +1,54 @@
 mod base;
 mod dark;
+mod default;
 mod forest;
+mod neo;
+mod neo_dark;
 mod neutral;
+mod redux;
+mod redux_color;
+mod redux_dark;
+mod redux_dark_color;
+pub mod variables;
 
 use crate::MermaidConfig;
-use crate::color::{Hsl, Rgb};
 use crate::theme::base::apply_base_theme_defaults;
 use crate::theme::dark::apply_dark_theme_defaults;
+use crate::theme::default::apply_default_theme_defaults;
 use crate::theme::forest::apply_forest_theme_defaults;
+use crate::theme::neo::apply_neo_theme_defaults;
+use crate::theme::neo_dark::apply_neo_dark_theme_defaults;
 use crate::theme::neutral::apply_neutral_theme_defaults;
-use serde_json::{Map, Value};
-
-fn get_truthy_string(map: &Map<String, Value>, key: &str) -> Option<String> {
-    map.get(key)
-        .and_then(|v| v.as_str())
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .map(|s| s.to_string())
-}
-
-fn set_if_missing(map: &mut Map<String, Value>, key: &str, value: Value) {
-    let is_missing = match map.get(key) {
-        None => true,
-        Some(Value::Null) => true,
-        Some(Value::String(s)) => s.trim().is_empty(),
-        _ => false,
-    };
-    if is_missing {
-        map.insert(key.to_string(), value);
-    }
-}
-
-fn ensure_xychart_theme_defaults(tv: &mut Map<String, Value>, default_palette: &str) {
-    let background = get_truthy_string(tv, "background").unwrap_or_else(|| "white".to_string());
-    let primary_text = get_truthy_string(tv, "primaryTextColor")
-        .or_else(|| get_truthy_string(tv, "textColor"))
-        .unwrap_or_else(|| "#333".to_string());
-
-    let mut xy = match tv.get("xyChart") {
-        Some(Value::Object(m)) => m.clone(),
-        _ => Map::new(),
-    };
-
-    set_if_missing(
-        &mut xy,
-        "backgroundColor",
-        Value::String(background.clone()),
-    );
-    for key in [
-        "titleColor",
-        "xAxisTitleColor",
-        "xAxisLabelColor",
-        "xAxisTickColor",
-        "xAxisLineColor",
-        "yAxisTitleColor",
-        "yAxisLabelColor",
-        "yAxisTickColor",
-        "yAxisLineColor",
-    ] {
-        set_if_missing(&mut xy, key, Value::String(primary_text.clone()));
-    }
-    set_if_missing(
-        &mut xy,
-        "plotColorPalette",
-        Value::String(default_palette.to_string()),
-    );
-
-    tv.insert("xyChart".to_string(), Value::Object(xy));
-}
+use crate::theme::redux::apply_redux_theme_defaults;
+use crate::theme::redux_color::apply_redux_color_theme_defaults;
+use crate::theme::redux_dark::apply_redux_dark_theme_defaults;
+use crate::theme::redux_dark_color::apply_redux_dark_color_theme_defaults;
+use crate::theme::variables::ThemeVariables;
 
 pub(crate) fn apply_theme_defaults(config: &mut MermaidConfig) {
     let theme = config.get_str("theme").unwrap_or("default");
+
+    let mut tv = match config.as_value().get("themeVariables") {
+        Some(v) => ThemeVariables::from_value(v),
+        _ => ThemeVariables::default(),
+    };
+
     match theme {
-        "base" => apply_base_theme_defaults(config),
-        "dark" => apply_dark_theme_defaults(config),
-        "forest" => apply_forest_theme_defaults(config),
-        "neutral" => apply_neutral_theme_defaults(config),
+        "base" => apply_base_theme_defaults(&mut tv),
+        "dark" => apply_dark_theme_defaults(&mut tv),
+        "default" => apply_default_theme_defaults(&mut tv),
+        "forest" => apply_forest_theme_defaults(&mut tv),
+        "neo" => apply_neo_theme_defaults(&mut tv),
+        "neo-dark" => apply_neo_dark_theme_defaults(&mut tv),
+        "neutral" => apply_neutral_theme_defaults(&mut tv),
+        "redux" => apply_redux_theme_defaults(&mut tv),
+        "redux-color" => apply_redux_color_theme_defaults(&mut tv),
+        "redux-dark" => apply_redux_dark_theme_defaults(&mut tv),
+        "redux-dark-color" => apply_redux_dark_color_theme_defaults(&mut tv),
         _ => {}
     }
+
+    config.set_value("themeVariables", tv.to_value());
 }
 
 #[cfg(test)]

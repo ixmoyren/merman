@@ -1,198 +1,170 @@
-use crate::MermaidConfig;
 use crate::color::{Hsl, Rgb};
-use crate::theme::{ensure_xychart_theme_defaults, get_truthy_string, set_if_missing};
-use serde_json::{Map, Value};
+use crate::theme::variables::{ThemeVariables, is_truthy};
 
-pub fn apply_forest_theme_defaults(config: &mut MermaidConfig) {
-    let mut tv = match config.as_value().get("themeVariables") {
-        Some(Value::Object(m)) => m.clone(),
-        _ => Map::new(),
-    };
+pub(crate) fn apply_forest_theme_defaults(tv: &mut ThemeVariables) {
+    tv.set_primary_color_if_none("#cde498");
+    tv.set_secondary_color_if_none("#cdffb2");
+    tv.set_background_if_none("white");
+    tv.set_border1_if_none("#13540c");
+    tv.set_border2_if_none("#6eaa49");
+    tv.set_arrowhead_color_if_none("green");
+    tv.set_font_family_if_none("\"trebuchet ms\", verdana, arial, sans-serif");
+    tv.set_font_size_if_none("16px");
+    tv.set_title_color_if_none("#333");
+    tv.set_edge_label_background_if_none("#e8e8e8");
+    tv.set_error_bkg_color_if_none("#552222");
+    tv.set_error_text_color_if_none("#552222");
 
-    // Mermaid 11.12.2: `theme-forest` base colors.
-    // Source: `repo-ref/mermaid/packages/mermaid/src/themes/theme-forest.js`.
-    //
-    // NOTE: `theme-forest` is not a thin palette override. It sets several diagram-facing
-    // variables (flowchart/state/sequence/...) in its `constructor()` + `updateColors()`.
-    // We explicitly seed those values here so headless SVG rendering can match upstream.
-    set_if_missing(
-        &mut tv,
-        "primaryColor",
-        Value::String("#cde498".to_string()),
-    );
-    set_if_missing(
-        &mut tv,
-        "secondaryColor",
-        Value::String("#cdffb2".to_string()),
-    );
-    set_if_missing(&mut tv, "background", Value::String("white".to_string()));
-    set_if_missing(&mut tv, "border1", Value::String("#13540c".to_string()));
-    set_if_missing(&mut tv, "border2", Value::String("#6eaa49".to_string()));
-    set_if_missing(
-        &mut tv,
-        "arrowheadColor",
-        Value::String("green".to_string()),
-    );
-    set_if_missing(
-        &mut tv,
-        "fontFamily",
-        Value::String("\"trebuchet ms\", verdana, arial, sans-serif".to_string()),
-    );
-    set_if_missing(&mut tv, "fontSize", Value::String("16px".to_string()));
-    set_if_missing(&mut tv, "titleColor", Value::String("#333".to_string()));
-    set_if_missing(
-        &mut tv,
-        "edgeLabelBackground",
-        Value::String("#e8e8e8".to_string()),
-    );
-    set_if_missing(
-        &mut tv,
-        "errorBkgColor",
-        Value::String("#552222".to_string()),
-    );
-    set_if_missing(
-        &mut tv,
-        "errorTextColor",
-        Value::String("#552222".to_string()),
-    );
-
-    let Some(primary_color) = get_truthy_string(&tv, "primaryColor") else {
-        config.set_value("themeVariables", Value::Object(tv));
+    let Some(primary_color) = tv.primary_color.clone() else {
         return;
     };
+    if !is_truthy(&tv.primary_color) {
+        return;
+    }
     let Ok(primary_rgb) = Rgb::try_from(&primary_color) else {
-        config.set_value("themeVariables", Value::Object(tv));
         return;
     };
     let primary_hsl = Hsl::from(primary_rgb);
-    if get_truthy_string(&tv, "primaryTextColor").is_none() {
-        tv.insert(
-            "primaryTextColor".to_string(),
-            Value::String(
-                Rgb {
-                    r: 1.0 - primary_rgb.r,
-                    g: 1.0 - primary_rgb.g,
-                    b: 1.0 - primary_rgb.b,
-                }
-                .to_string(),
-            ),
+
+    if !is_truthy(&tv.primary_text_color) {
+        tv.primary_text_color = Some(
+            Rgb {
+                r: 1.0 - primary_rgb.r,
+                g: 1.0 - primary_rgb.g,
+                b: 1.0 - primary_rgb.b,
+            }
+            .to_string(),
         );
     }
 
-    let secondary_color =
-        get_truthy_string(&tv, "secondaryColor").unwrap_or_else(|| "#cdffb2".to_string());
+    let secondary_color = tv
+        .secondary_color
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or("#cdffb2")
+        .to_string();
     let secondary_hsl = Rgb::try_from(&secondary_color)
         .map(Hsl::from)
         .unwrap_or(primary_hsl);
 
-    // `theme-forest` diagram-facing surfaces.
-    // Source: `theme-forest.js` constructor + `updateColors()`.
-    set_if_missing(&mut tv, "mainBkg", Value::String(primary_color.clone()));
-    set_if_missing(&mut tv, "secondBkg", Value::String(secondary_color.clone()));
-    // Table striping colors (used by ER diagrams).
-    // Source: `theme-forest.js`:
-    //   rowOdd  = lighten(mainBkg, 75) || '#ffffff'
-    //   rowEven = lighten(mainBkg, 20)
-    set_if_missing(
-        &mut tv,
-        "rowOdd",
-        Value::String(primary_hsl.adjust_hsl(0.0, 0.0, 75.0).to_string()),
-    );
-    set_if_missing(
-        &mut tv,
-        "rowEven",
-        Value::String(primary_hsl.adjust_hsl(0.0, 0.0, 20.0).to_string()),
-    );
+    tv.set_main_bkg_if_none(&primary_color);
+    tv.set_second_bkg_if_none(&secondary_color);
+    tv.set_row_odd_if_none(primary_hsl.adjust_hsl(0.0, 0.0, 75.0).to_string());
+    tv.set_row_even_if_none(primary_hsl.adjust_hsl(0.0, 0.0, 20.0).to_string());
 
-    // `invert('white')` in `khroma` ends up as a pure black in Mermaid's serialized SVG output.
-    set_if_missing(&mut tv, "lineColor", Value::String("#000000".to_string()));
-    set_if_missing(&mut tv, "textColor", Value::String("#000000".to_string()));
+    tv.set_line_color_if_none("#000000");
+    tv.set_text_color_if_none("#000000");
 
-    // Flowchart variables (after `updateColors()`).
-    set_if_missing(&mut tv, "nodeBkg", Value::String(primary_color.clone()));
-    set_if_missing(&mut tv, "nodeBorder", Value::String("#13540c".to_string()));
-    set_if_missing(
-        &mut tv,
-        "clusterBkg",
-        Value::String(secondary_color.clone()),
-    );
-    set_if_missing(
-        &mut tv,
-        "clusterBorder",
-        Value::String("#6eaa49".to_string()),
-    );
-    set_if_missing(
-        &mut tv,
-        "defaultLinkColor",
-        Value::String("#000000".to_string()),
-    );
+    tv.set_node_bkg_if_none(&primary_color);
+    tv.set_node_border_if_none("#13540c");
+    tv.set_cluster_bkg_if_none(&secondary_color);
+    tv.set_cluster_border_if_none("#6eaa49");
+    tv.set_default_link_color_if_none("#000000");
 
-    // mkBorder(...) helper (shared across themes).
-    let dark_mode = tv
-        .get("darkMode")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
+    let dark_mode = tv.dark_mode.unwrap_or(false);
     let mk_border_delta_l = if dark_mode { 10.0 } else { -10.0 };
-    set_if_missing(
-        &mut tv,
-        "primaryBorderColor",
-        Value::String(
-            primary_hsl
-                .adjust_hsl(0.0, -40.0, mk_border_delta_l)
-                .to_string(),
-        ),
+    tv.set_primary_border_color_if_none(
+        primary_hsl
+            .adjust_hsl(0.0, -40.0, mk_border_delta_l)
+            .to_string(),
     );
-    set_if_missing(
-        &mut tv,
-        "secondaryBorderColor",
-        Value::String(
-            secondary_hsl
-                .adjust_hsl(0.0, -40.0, mk_border_delta_l)
-                .to_string(),
-        ),
+    tv.set_secondary_border_color_if_none(
+        secondary_hsl
+            .adjust_hsl(0.0, -40.0, mk_border_delta_l)
+            .to_string(),
     );
 
-    // `theme-forest` sets: `tertiaryColor = lighten(primaryColor, 10)`.
-    let tertiary_hsl = if let Some(tertiary_color) = get_truthy_string(&tv, "tertiaryColor")
-        && let Ok(tertiary_color) = Rgb::try_from(tertiary_color)
+    let tertiary_hsl = if let Some(ref tc) = tv.tertiary_color
+        && is_truthy(&tv.tertiary_color)
+        && let Ok(tc_rgb) = Rgb::try_from(tc)
     {
-        tertiary_color.into()
+        tc_rgb.into()
     } else {
         primary_hsl.adjust_hsl(0.0, 0.0, 10.0)
     };
-    set_if_missing(
-        &mut tv,
-        "tertiaryColor",
-        Value::String(tertiary_hsl.to_string()),
-    );
-    set_if_missing(
-        &mut tv,
-        "tertiaryBorderColor",
-        Value::String(
-            tertiary_hsl
-                .adjust_hsl(0.0, -40.0, mk_border_delta_l)
-                .to_string(),
-        ),
+    tv.set_tertiary_color_if_none(tertiary_hsl.to_string());
+    tv.set_tertiary_border_color_if_none(
+        tertiary_hsl
+            .adjust_hsl(0.0, -40.0, mk_border_delta_l)
+            .to_string(),
     );
 
-    // `theme-forest` ends up using black label text (via `actorTextColor`).
-    set_if_missing(
-        &mut tv,
-        "labelTextColor",
-        Value::String("black".to_string()),
-    );
-    set_if_missing(
-        &mut tv,
-        "scaleLabelColor",
-        Value::String("black".to_string()),
-    );
-    let scale_label_color =
-        get_truthy_string(&tv, "scaleLabelColor").unwrap_or_else(|| "black".to_string());
+    tv.set_label_text_color_if_none("black");
+    tv.set_scale_label_color_if_none("black");
+    let scale_label_color = tv
+        .scale_label_color
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or("black")
+        .to_string();
 
-    // Color scales: match `theme-forest` `updateColors()`:
-    // - derive from base colors / hue shifts
-    // - darken each `cScale*` by 10
-    // - `cScalePeer1/2` use special darken amounts, others are darken(`cScale*`, 25)
+    // Color scales
+    let amount = 10.0;
+    tv.set_c_scale0_if_none(primary_hsl.adjust_hsl(0.0, 0.0, -amount).to_string());
+    tv.set_c_scale1_if_none(secondary_hsl.adjust_hsl(0.0, 0.0, -amount).to_string());
+    tv.set_c_scale2_if_none(tertiary_hsl.adjust_hsl(0.0, 0.0, -amount).to_string());
+    tv.set_c_scale3_if_none(
+        primary_hsl
+            .adjust_hsl(30.0, 0.0, 0.0)
+            .adjust_hsl(0.0, 0.0, -amount)
+            .to_string(),
+    );
+    tv.set_c_scale4_if_none(
+        primary_hsl
+            .adjust_hsl(60.0, 0.0, 0.0)
+            .adjust_hsl(0.0, 0.0, -amount)
+            .to_string(),
+    );
+    tv.set_c_scale5_if_none(
+        primary_hsl
+            .adjust_hsl(90.0, 0.0, 0.0)
+            .adjust_hsl(0.0, 0.0, -amount)
+            .to_string(),
+    );
+    tv.set_c_scale6_if_none(
+        primary_hsl
+            .adjust_hsl(120.0, 0.0, 0.0)
+            .adjust_hsl(0.0, 0.0, -amount)
+            .to_string(),
+    );
+    tv.set_c_scale7_if_none(
+        primary_hsl
+            .adjust_hsl(150.0, 0.0, 0.0)
+            .adjust_hsl(0.0, 0.0, -amount)
+            .to_string(),
+    );
+    tv.set_c_scale8_if_none(
+        primary_hsl
+            .adjust_hsl(210.0, 0.0, 0.0)
+            .adjust_hsl(0.0, 0.0, -amount)
+            .to_string(),
+    );
+    tv.set_c_scale9_if_none(
+        primary_hsl
+            .adjust_hsl(270.0, 0.0, 0.0)
+            .adjust_hsl(0.0, 0.0, -amount)
+            .to_string(),
+    );
+    tv.set_c_scale10_if_none(
+        primary_hsl
+            .adjust_hsl(300.0, 0.0, 0.0)
+            .adjust_hsl(0.0, 0.0, -amount)
+            .to_string(),
+    );
+    tv.set_c_scale11_if_none(
+        primary_hsl
+            .adjust_hsl(330.0, 0.0, 0.0)
+            .adjust_hsl(0.0, 0.0, -amount)
+            .to_string(),
+    );
+
+    if tv.c_scale_peer1.is_none() {
+        tv.c_scale_peer1 = Some(secondary_hsl.adjust_hsl(0.0, 0.0, -45.0).to_string());
+    }
+    if tv.c_scale_peer2.is_none() {
+        tv.c_scale_peer2 = Some(tertiary_hsl.adjust_hsl(0.0, 0.0, -40.0).to_string());
+    }
+
     let c_scales: [Hsl; 12] = [
         primary_hsl,
         secondary_hsl,
@@ -209,45 +181,88 @@ pub fn apply_forest_theme_defaults(config: &mut MermaidConfig) {
     ]
     .map(|base| base.adjust_hsl(0.0, 0.0, -10.0));
 
-    for (i, v) in c_scales.iter().enumerate() {
-        set_if_missing(&mut tv, &format!("cScale{i}"), Value::String(v.to_string()));
+    macro_rules! set_scale_peer {
+        ($field:ident, $idx:literal) => {
+            if tv.$field.is_none() {
+                tv.$field = Some(c_scales[$idx].adjust_hsl(0.0, 0.0, -25.0).to_string());
+            }
+        };
+    }
+    macro_rules! set_scale_inv {
+        ($field:ident, $idx:literal) => {
+            if tv.$field.is_none() {
+                tv.$field = Some(c_scales[$idx].adjust_hsl(180.0, 0.0, 0.0).to_string());
+            }
+        };
+    }
+    macro_rules! set_scale_label {
+        ($field:ident) => {
+            if tv.$field.is_none() {
+                tv.$field = Some(scale_label_color.clone());
+            }
+        };
     }
 
-    set_if_missing(
-        &mut tv,
-        "cScalePeer1",
-        Value::String(secondary_hsl.adjust_hsl(0.0, 0.0, -45.0).to_string()),
-    );
-    set_if_missing(
-        &mut tv,
-        "cScalePeer2",
-        Value::String(tertiary_hsl.adjust_hsl(0.0, 0.0, -40.0).to_string()),
-    );
+    set_scale_peer!(c_scale_peer0, 0);
+    set_scale_inv!(c_scale_inv0, 0);
+    set_scale_label!(c_scale_label0);
+    set_scale_peer!(c_scale_peer1, 1);
+    set_scale_inv!(c_scale_inv1, 1);
+    set_scale_label!(c_scale_label1);
+    set_scale_peer!(c_scale_peer2, 2);
+    set_scale_inv!(c_scale_inv2, 2);
+    set_scale_label!(c_scale_label2);
+    set_scale_peer!(c_scale_peer3, 3);
+    set_scale_inv!(c_scale_inv3, 3);
+    set_scale_label!(c_scale_label3);
+    set_scale_peer!(c_scale_peer4, 4);
+    set_scale_inv!(c_scale_inv4, 4);
+    set_scale_label!(c_scale_label4);
+    set_scale_peer!(c_scale_peer5, 5);
+    set_scale_inv!(c_scale_inv5, 5);
+    set_scale_label!(c_scale_label5);
+    set_scale_peer!(c_scale_peer6, 6);
+    set_scale_inv!(c_scale_inv6, 6);
+    set_scale_label!(c_scale_label6);
+    set_scale_peer!(c_scale_peer7, 7);
+    set_scale_inv!(c_scale_inv7, 7);
+    set_scale_label!(c_scale_label7);
+    set_scale_peer!(c_scale_peer8, 8);
+    set_scale_inv!(c_scale_inv8, 8);
+    set_scale_label!(c_scale_label8);
+    set_scale_peer!(c_scale_peer9, 9);
+    set_scale_inv!(c_scale_inv9, 9);
+    set_scale_label!(c_scale_label9);
+    set_scale_peer!(c_scale_peer10, 10);
+    set_scale_inv!(c_scale_inv10, 10);
+    set_scale_label!(c_scale_label10);
+    set_scale_peer!(c_scale_peer11, 11);
+    set_scale_inv!(c_scale_inv11, 11);
+    set_scale_label!(c_scale_label11);
 
-    for (i, c_hsl) in c_scales.iter().enumerate() {
-        set_if_missing(
-            &mut tv,
-            &format!("cScalePeer{i}"),
-            Value::String(c_hsl.adjust_hsl(0.0, 0.0, -25.0).to_string()),
-        );
-        set_if_missing(
-            &mut tv,
-            &format!("cScaleInv{i}"),
-            Value::String(c_hsl.adjust_hsl(180.0, 0.0, 0.0).to_string()),
-        );
-        set_if_missing(
-            &mut tv,
-            &format!("cScaleLabel{i}"),
-            Value::String(scale_label_color.clone()),
+    // xyChart
+    let xy = tv.xy_chart.get_or_insert_with(Default::default);
+    let bg = tv
+        .background
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or("white")
+        .to_string();
+    let pt = tv
+        .primary_text_color
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .or_else(|| tv.text_color.as_deref().filter(|s| !s.trim().is_empty()))
+        .unwrap_or("#333")
+        .to_string();
+    if xy.background_color.is_none() {
+        xy.background_color = Some(bg);
+    }
+    xy.fill_prime_color(pt);
+    if xy.plot_color_palette.is_none() {
+        xy.plot_color_palette = Some(
+            "#CDE498,#FF6B6B,#A0D2DB,#D7BDE2,#F0F0F0,#FFC3A0,#7FD8BE,#FF9A8B,#FAF3E0,#FFF176"
+                .to_string(),
         );
     }
-
-    // `theme-forest` xychart palette + colors.
-    // Source: `theme-forest.js`.
-    ensure_xychart_theme_defaults(
-        &mut tv,
-        "#CDE498,#FF6B6B,#A0D2DB,#D7BDE2,#F0F0F0,#FFC3A0,#7FD8BE,#FF9A8B,#FAF3E0,#FFF176",
-    );
-
-    config.set_value("themeVariables", Value::Object(tv));
 }
