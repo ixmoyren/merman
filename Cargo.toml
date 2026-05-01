@@ -44,7 +44,7 @@ thiserror = "2.0.18"
 tracing = "0.1.44"
 futures = "0.3.32"
 hashbrown = "0.17.0"
-lol_html = "2.7.2"
+lol_html = "2.8.1"
 url = "2.5.8"
 uuid = { version = "1.23.1", features = ["v4"] }
 chrono = { version = "0.4.44", features = ["clock"] }
