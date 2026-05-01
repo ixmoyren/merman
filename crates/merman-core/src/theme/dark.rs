@@ -2,11 +2,6 @@ use crate::color::{Hsl, Rgb};
 use crate::theme::variables::{ThemeVariables, is_truthy};
 
 pub(crate) fn apply_dark_theme_defaults(tv: &mut ThemeVariables) {
-    let c_scales_hex: [&str; 12] = [
-        "#1f2020", "#0b0000", "#4d1037", "#3f5258", "#4f2f1b", "#6e0a0a", "#3b0048", "#995a01",
-        "#154706", "#161722", "#00296f", "#01629c",
-    ];
-
     tv.set_background_if_none("#333");
     tv.set_primary_color_if_none("#1f2020");
 
@@ -50,13 +45,24 @@ pub(crate) fn apply_dark_theme_defaults(tv: &mut ThemeVariables) {
         .unwrap_or(&label_text_color)
         .to_string();
 
-    macro_rules! set_scale {
-        ($field:ident, $hex:expr) => {
-            if tv.$field.is_none() {
-                tv.$field = Some($hex.to_string());
-            }
-        };
-    }
+    let c_scales_hex: [&str; 12] = [
+        "#1f2020", "#0b0000", "#4d1037", "#3f5258", "#4f2f1b", "#6e0a0a", "#3b0048", "#995a01",
+        "#154706", "#161722", "#00296f", "#01629c",
+    ];
+
+    tv.set_c_scale0_if_none(c_scales_hex[0]);
+    tv.set_c_scale1_if_none(c_scales_hex[1]);
+    tv.set_c_scale2_if_none(c_scales_hex[2]);
+    tv.set_c_scale3_if_none(c_scales_hex[3]);
+    tv.set_c_scale4_if_none(c_scales_hex[4]);
+    tv.set_c_scale5_if_none(c_scales_hex[5]);
+    tv.set_c_scale6_if_none(c_scales_hex[6]);
+    tv.set_c_scale7_if_none(c_scales_hex[7]);
+    tv.set_c_scale8_if_none(c_scales_hex[8]);
+    tv.set_c_scale9_if_none(c_scales_hex[9]);
+    tv.set_c_scale10_if_none(c_scales_hex[10]);
+    tv.set_c_scale11_if_none(c_scales_hex[11]);
+
     macro_rules! set_scale_peer {
         ($field:ident, $hex:expr) => {
             if tv.$field.is_none()
@@ -91,62 +97,50 @@ pub(crate) fn apply_dark_theme_defaults(tv: &mut ThemeVariables) {
         };
     }
 
-    set_scale!(c_scale0, c_scales_hex[0]);
     set_scale_peer!(c_scale_peer0, c_scales_hex[0]);
     set_scale_inv!(c_scale_inv0, c_scales_hex[0]);
     set_scale_label!(c_scale_label0);
 
-    set_scale!(c_scale1, c_scales_hex[1]);
     set_scale_peer!(c_scale_peer1, c_scales_hex[1]);
     set_scale_inv!(c_scale_inv1, c_scales_hex[1]);
     set_scale_label!(c_scale_label1);
 
-    set_scale!(c_scale2, c_scales_hex[2]);
     set_scale_peer!(c_scale_peer2, c_scales_hex[2]);
     set_scale_inv!(c_scale_inv2, c_scales_hex[2]);
     set_scale_label!(c_scale_label2);
 
-    set_scale!(c_scale3, c_scales_hex[3]);
     set_scale_peer!(c_scale_peer3, c_scales_hex[3]);
     set_scale_inv!(c_scale_inv3, c_scales_hex[3]);
     set_scale_label!(c_scale_label3);
 
-    set_scale!(c_scale4, c_scales_hex[4]);
     set_scale_peer!(c_scale_peer4, c_scales_hex[4]);
     set_scale_inv!(c_scale_inv4, c_scales_hex[4]);
     set_scale_label!(c_scale_label4);
 
-    set_scale!(c_scale5, c_scales_hex[5]);
     set_scale_peer!(c_scale_peer5, c_scales_hex[5]);
     set_scale_inv!(c_scale_inv5, c_scales_hex[5]);
     set_scale_label!(c_scale_label5);
 
-    set_scale!(c_scale6, c_scales_hex[6]);
     set_scale_peer!(c_scale_peer6, c_scales_hex[6]);
     set_scale_inv!(c_scale_inv6, c_scales_hex[6]);
     set_scale_label!(c_scale_label6);
 
-    set_scale!(c_scale7, c_scales_hex[7]);
     set_scale_peer!(c_scale_peer7, c_scales_hex[7]);
     set_scale_inv!(c_scale_inv7, c_scales_hex[7]);
     set_scale_label!(c_scale_label7);
 
-    set_scale!(c_scale8, c_scales_hex[8]);
     set_scale_peer!(c_scale_peer8, c_scales_hex[8]);
     set_scale_inv!(c_scale_inv8, c_scales_hex[8]);
     set_scale_label!(c_scale_label8);
 
-    set_scale!(c_scale9, c_scales_hex[9]);
     set_scale_peer!(c_scale_peer9, c_scales_hex[9]);
     set_scale_inv!(c_scale_inv9, c_scales_hex[9]);
     set_scale_label!(c_scale_label9);
 
-    set_scale!(c_scale10, c_scales_hex[10]);
     set_scale_peer!(c_scale_peer10, c_scales_hex[10]);
     set_scale_inv!(c_scale_inv10, c_scales_hex[10]);
     set_scale_label!(c_scale_label10);
 
-    set_scale!(c_scale11, c_scales_hex[11]);
     set_scale_peer!(c_scale_peer11, c_scales_hex[11]);
     set_scale_inv!(c_scale_inv11, c_scales_hex[11]);
     set_scale_label!(c_scale_label11);
@@ -166,14 +160,9 @@ pub(crate) fn apply_dark_theme_defaults(tv: &mut ThemeVariables) {
         .or_else(|| tv.text_color.as_deref().filter(|s| !s.trim().is_empty()))
         .unwrap_or("#333")
         .to_string();
-    if xy.background_color.is_none() {
-        xy.background_color = Some(bg);
-    }
+    xy.set_background_color_if_none(bg);
+    xy.set_plot_color_palette_if_none(
+        "#3498db,#2ecc71,#e74c3c,#f1c40f,#bdc3c7,#ffffff,#34495e,#9b59b6,#1abc9c,#e67e22",
+    );
     xy.fill_prime_color(pt);
-    if xy.plot_color_palette.is_none() {
-        xy.plot_color_palette = Some(
-            "#3498db,#2ecc71,#e74c3c,#f1c40f,#bdc3c7,#ffffff,#34495e,#9b59b6,#1abc9c,#e67e22"
-                .to_string(),
-        );
-    }
 }

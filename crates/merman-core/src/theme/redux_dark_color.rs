@@ -161,22 +161,20 @@ pub(crate) fn apply_redux_dark_color_theme_defaults(tv: &mut ThemeVariables) {
     }
 
     // Tailwind color arrays
-    if tv.border_color_array.is_none() {
-        tv.border_color_array = Some(vec![
-            "#E879F9".into(),
-            "#2DD4BF".into(),
-            "#FB923C".into(),
-            "#22D3EE".into(),
-            "#4ADE80".into(),
-            "#A78BFA".into(),
-            "#F87171".into(),
-            "#FACC15".into(),
-            "#818CF8".into(),
-            "#A3E635".into(),
-            "#38BDF8".into(),
-            "#FB7185".into(),
-        ]);
-    }
+    tv.set_border_color_array_if_none(vec![
+        "#E879F9".into(),
+        "#2DD4BF".into(),
+        "#FB923C".into(),
+        "#22D3EE".into(),
+        "#4ADE80".into(),
+        "#A78BFA".into(),
+        "#F87171".into(),
+        "#FACC15".into(),
+        "#818CF8".into(),
+        "#A3E635".into(),
+        "#38BDF8".into(),
+        "#FB7185".into(),
+    ]);
 
     // xyChart
     let xy = tv.xy_chart.get_or_insert_with(Default::default);
@@ -193,14 +191,9 @@ pub(crate) fn apply_redux_dark_color_theme_defaults(tv: &mut ThemeVariables) {
         .or_else(|| tv.text_color.as_deref().filter(|s| !s.trim().is_empty()))
         .unwrap_or("#333")
         .to_string();
-    if xy.background_color.is_none() {
-        xy.background_color = Some(bg);
-    }
+    xy.set_background_color_if_none(bg);
+    xy.set_plot_color_palette_if_none(
+        "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0",
+    );
     xy.fill_prime_color(pt);
-    if xy.plot_color_palette.is_none() {
-        xy.plot_color_palette = Some(
-            "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0"
-                .to_string(),
-        );
-    }
 }

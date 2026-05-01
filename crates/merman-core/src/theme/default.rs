@@ -211,12 +211,8 @@ pub(crate) fn apply_default_theme_defaults(tv: &mut ThemeVariables) {
     .map(|base| base.adjust_hsl(0.0, 0.0, -10.0));
 
     // Peer: cScalePeer1/2 special, rest darken(25)
-    if tv.c_scale_peer1.is_none() {
-        tv.c_scale_peer1 = Some(secondary_hsl.adjust_hsl(0.0, 0.0, -45.0).to_string());
-    }
-    if tv.c_scale_peer2.is_none() {
-        tv.c_scale_peer2 = Some(tertiary_hsl.adjust_hsl(0.0, 0.0, -40.0).to_string());
-    }
+    tv.set_c_scale_peer1_if_none(secondary_hsl.adjust_hsl(0.0, 0.0, -45.0).to_string());
+    tv.set_c_scale_peer2_if_none(tertiary_hsl.adjust_hsl(0.0, 0.0, -40.0).to_string());
 
     let label_text_color = tv
         .label_text_color
@@ -322,14 +318,9 @@ pub(crate) fn apply_default_theme_defaults(tv: &mut ThemeVariables) {
         .filter(|s| !s.trim().is_empty())
         .unwrap_or("white")
         .to_string();
-    if xy.background_color.is_none() {
-        xy.background_color = Some(bg);
-    }
+    xy.set_background_color_if_none(bg);
+    xy.set_plot_color_palette_if_none(
+        "#ECECFF,#8493A6,#FFC3A0,#DCDDE1,#B8E994,#D1A36F,#C3CDE6,#FFB6C1,#496078,#F8F3E3",
+    );
     xy.fill_prime_color(primary_text_color);
-    if xy.plot_color_palette.is_none() {
-        xy.plot_color_palette = Some(
-            "#ECECFF,#8493A6,#FFC3A0,#DCDDE1,#B8E994,#D1A36F,#C3CDE6,#FFB6C1,#496078,#F8F3E3"
-                .to_string(),
-        );
-    }
 }

@@ -1,10 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-// ---------------------------------------------------------------------------
-// Sub-object structs
-// ---------------------------------------------------------------------------
-
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct XyChartThemeVars {
@@ -35,6 +31,26 @@ pub struct XyChartThemeVars {
 }
 
 impl XyChartThemeVars {
+    pub(crate) fn set_plot_color_palette_if_none(&mut self, value: impl Into<String>) {
+        if self
+            .plot_color_palette
+            .as_ref()
+            .is_none_or(|s| s.trim().is_empty())
+        {
+            self.plot_color_palette = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_background_color_if_none(&mut self, value: impl Into<String>) {
+        if self
+            .background_color
+            .as_ref()
+            .is_none_or(|s| s.trim().is_empty())
+        {
+            self.background_color = Some(value.into());
+        }
+    }
+
     pub(crate) fn fill_prime_color(&mut self, prime_color: String) {
         if self.title_color.is_none() {
             self.title_color = Some(prime_color.clone());
@@ -91,6 +107,72 @@ pub struct RadarThemeVars {
     pub legend_font_size: Option<f64>,
 }
 
+impl RadarThemeVars {
+    pub(crate) fn set_axis_color_if_none(&mut self, value: impl Into<String>) {
+        if self.axis_color.as_ref().is_none_or(|s| s.trim().is_empty()) {
+            self.axis_color = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_axis_stroke_width_if_none(&mut self, value: impl Into<f64>) {
+        if self.axis_stroke_width.as_ref().is_none() {
+            self.axis_stroke_width = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_axis_label_font_size_if_none(&mut self, value: impl Into<f64>) {
+        if self.axis_label_font_size.as_ref().is_none() {
+            self.axis_label_font_size = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_curve_opacity_if_none(&mut self, value: impl Into<f64>) {
+        if self.curve_opacity.as_ref().is_none() {
+            self.curve_opacity = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_curve_stroke_width_if_none(&mut self, value: impl Into<f64>) {
+        if self.curve_stroke_width.as_ref().is_none() {
+            self.curve_stroke_width = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_graticule_color_if_none(&mut self, value: impl Into<String>) {
+        if self
+            .graticule_color
+            .as_ref()
+            .is_none_or(|s| s.trim().is_empty())
+        {
+            self.graticule_color = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_graticule_stroke_width_if_none(&mut self, value: impl Into<f64>) {
+        if self.graticule_stroke_width.as_ref().is_none() {
+            self.graticule_stroke_width = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_graticule_opacity_if_none(&mut self, value: impl Into<f64>) {
+        if self.graticule_opacity.as_ref().is_none() {
+            self.graticule_opacity = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_legend_box_size_if_none(&mut self, value: impl Into<f64>) {
+        if self.legend_box_size.as_ref().is_none() {
+            self.legend_box_size = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_legend_font_size_if_none(&mut self, value: impl Into<f64>) {
+        if self.legend_font_size.as_ref().is_none() {
+            self.legend_font_size = Some(value.into());
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct WardleyThemeVars {
@@ -136,10 +218,6 @@ pub struct PacketThemeVars {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub block_fill_color: Option<String>,
 }
-
-// ---------------------------------------------------------------------------
-// Main ThemeVariables struct
-// ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -822,6 +900,7 @@ pub(crate) fn is_truthy(opt: &Option<String>) -> bool {
     opt.as_ref().map(|s| !s.trim().is_empty()).unwrap_or(false)
 }
 
+#[allow(dead_code)]
 impl ThemeVariables {
     /// Deserialize from a JSON Value.
     pub fn from_value(value: &Value) -> Self {
@@ -3010,6 +3089,12 @@ impl ThemeVariables {
             .is_none_or(|s| s.trim().is_empty())
         {
             self.git_branch_label7 = Some(value.into());
+        }
+    }
+
+    pub(crate) fn set_border_color_array_if_none(&mut self, value: Vec<String>) {
+        if self.border_color_array.as_ref().is_none() {
+            self.border_color_array = Some(value);
         }
     }
 }

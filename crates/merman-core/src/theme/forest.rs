@@ -158,12 +158,8 @@ pub(crate) fn apply_forest_theme_defaults(tv: &mut ThemeVariables) {
             .to_string(),
     );
 
-    if tv.c_scale_peer1.is_none() {
-        tv.c_scale_peer1 = Some(secondary_hsl.adjust_hsl(0.0, 0.0, -45.0).to_string());
-    }
-    if tv.c_scale_peer2.is_none() {
-        tv.c_scale_peer2 = Some(tertiary_hsl.adjust_hsl(0.0, 0.0, -40.0).to_string());
-    }
+    tv.set_c_scale_peer1_if_none(secondary_hsl.adjust_hsl(0.0, 0.0, -45.0).to_string());
+    tv.set_c_scale_peer2_if_none(tertiary_hsl.adjust_hsl(0.0, 0.0, -40.0).to_string());
 
     let c_scales: [Hsl; 12] = [
         primary_hsl,
@@ -255,14 +251,9 @@ pub(crate) fn apply_forest_theme_defaults(tv: &mut ThemeVariables) {
         .or_else(|| tv.text_color.as_deref().filter(|s| !s.trim().is_empty()))
         .unwrap_or("#333")
         .to_string();
-    if xy.background_color.is_none() {
-        xy.background_color = Some(bg);
-    }
+    xy.set_background_color_if_none(bg);
+    xy.set_plot_color_palette_if_none(
+        "#CDE498,#FF6B6B,#A0D2DB,#D7BDE2,#F0F0F0,#FFC3A0,#7FD8BE,#FF9A8B,#FAF3E0,#FFF176",
+    );
     xy.fill_prime_color(pt);
-    if xy.plot_color_palette.is_none() {
-        xy.plot_color_palette = Some(
-            "#CDE498,#FF6B6B,#A0D2DB,#D7BDE2,#F0F0F0,#FFC3A0,#7FD8BE,#FF9A8B,#FAF3E0,#FFF176"
-                .to_string(),
-        );
-    }
 }

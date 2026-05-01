@@ -42,23 +42,23 @@ pub(crate) fn apply_redux_color_theme_defaults(tv: &mut ThemeVariables) {
     tv.set_primary_text_color_if_none(if dark_mode { "#eee" } else { "#28253D" });
 
     // Hardcoded Tailwind 300-level colors — no darkening applied
-    tv.set_c_scale0_if_none("#f4a8ff".to_string());
-    tv.set_c_scale1_if_none("#46ecd5".to_string());
-    tv.set_c_scale2_if_none("#ffb86a".to_string());
-    tv.set_c_scale3_if_none("#dab2ff".to_string());
-    tv.set_c_scale4_if_none("#7bf1a8".to_string());
-    tv.set_c_scale5_if_none("#c4b4ff".to_string());
-    tv.set_c_scale6_if_none("#ffa2a2".to_string());
-    tv.set_c_scale7_if_none("#ffdf20".to_string());
-    tv.set_c_scale8_if_none("#a3b3ff".to_string());
-    tv.set_c_scale9_if_none("#bbf451".to_string());
-    tv.set_c_scale10_if_none("#74d4ff".to_string());
-    tv.set_c_scale11_if_none("#ffa1ad".to_string());
-
-    let c_scale_colors: [&str; 12] = [
+    let c_scales_hex: [&str; 12] = [
         "#f4a8ff", "#46ecd5", "#ffb86a", "#dab2ff", "#7bf1a8", "#c4b4ff", "#ffa2a2", "#ffdf20",
         "#a3b3ff", "#bbf451", "#74d4ff", "#ffa1ad",
     ];
+
+    tv.set_c_scale0_if_none(c_scales_hex[0]);
+    tv.set_c_scale1_if_none(c_scales_hex[1]);
+    tv.set_c_scale2_if_none(c_scales_hex[2]);
+    tv.set_c_scale3_if_none(c_scales_hex[3]);
+    tv.set_c_scale4_if_none(c_scales_hex[4]);
+    tv.set_c_scale5_if_none(c_scales_hex[5]);
+    tv.set_c_scale6_if_none(c_scales_hex[6]);
+    tv.set_c_scale7_if_none(c_scales_hex[7]);
+    tv.set_c_scale8_if_none(c_scales_hex[8]);
+    tv.set_c_scale9_if_none(c_scales_hex[9]);
+    tv.set_c_scale10_if_none(c_scales_hex[10]);
+    tv.set_c_scale11_if_none(c_scales_hex[11]);
 
     let scale_label_color = tv
         .scale_label_color
@@ -78,12 +78,12 @@ pub(crate) fn apply_redux_color_theme_defaults(tv: &mut ThemeVariables) {
         macro_rules! set_3 {
             ($peer:ident, $inv:ident, $label:ident) => {
                 if tv.$peer.is_none()
-                    && let Ok(rgb) = Rgb::try_from(c_scale_colors[i])
+                    && let Ok(rgb) = Rgb::try_from(c_scales_hex[i])
                 {
                     tv.$peer = Some(Hsl::from(rgb).adjust_hsl(0.0, 0.0, peer_delta).to_string());
                 }
                 if tv.$inv.is_none()
-                    && let Ok(Rgb { r, g, b }) = Rgb::try_from(c_scale_colors[i])
+                    && let Ok(Rgb { r, g, b }) = Rgb::try_from(c_scales_hex[i])
                 {
                     tv.$inv = Some(
                         Rgb {
@@ -157,22 +157,20 @@ pub(crate) fn apply_redux_color_theme_defaults(tv: &mut ThemeVariables) {
             "#FB7185".into(),
         ]);
     }
-    if tv.bkg_color_array.is_none() {
-        tv.bkg_color_array = Some(vec![
-            "#FDF4FF".into(),
-            "#F0FDFA".into(),
-            "#FFF7ED".into(),
-            "#ECFEFF".into(),
-            "#F0FDF4".into(),
-            "#F5F3FF".into(),
-            "#FEF2F2".into(),
-            "#FEFCE8".into(),
-            "#EEF2FF".into(),
-            "#F7FEE7".into(),
-            "#F0F9FF".into(),
-            "#FFF1F2".into(),
-        ]);
-    }
+    tv.set_border_color_array_if_none(vec![
+        "#FDF4FF".into(),
+        "#F0FDFA".into(),
+        "#FFF7ED".into(),
+        "#ECFEFF".into(),
+        "#F0FDF4".into(),
+        "#F5F3FF".into(),
+        "#FEF2F2".into(),
+        "#FEFCE8".into(),
+        "#EEF2FF".into(),
+        "#F7FEE7".into(),
+        "#F0F9FF".into(),
+        "#FFF1F2".into(),
+    ]);
 
     // xyChart
     let xy = tv.xy_chart.get_or_insert_with(Default::default);
@@ -189,14 +187,9 @@ pub(crate) fn apply_redux_color_theme_defaults(tv: &mut ThemeVariables) {
         .or_else(|| tv.text_color.as_deref().filter(|s| !s.trim().is_empty()))
         .unwrap_or("#333")
         .to_string();
-    if xy.background_color.is_none() {
-        xy.background_color = Some(bg);
-    }
+    xy.set_background_color_if_none(bg);
+    xy.set_plot_color_palette_if_none(
+        "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0",
+    );
     xy.fill_prime_color(pt);
-    if xy.plot_color_palette.is_none() {
-        xy.plot_color_palette = Some(
-            "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0"
-                .to_string(),
-        );
-    }
 }

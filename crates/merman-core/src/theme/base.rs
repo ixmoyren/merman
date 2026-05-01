@@ -204,36 +204,16 @@ pub(crate) fn apply_base_theme_defaults(tv: &mut ThemeVariables) {
 
     // Radar sub-object
     let radar = tv.radar.get_or_insert_with(Default::default);
-    if radar.axis_color.is_none() {
-        radar.axis_color = Some(line_color);
-    }
-    if radar.axis_stroke_width.is_none() {
-        radar.axis_stroke_width = Some(2.0);
-    }
-    if radar.axis_label_font_size.is_none() {
-        radar.axis_label_font_size = Some(12.0);
-    }
-    if radar.curve_opacity.is_none() {
-        radar.curve_opacity = Some(0.5);
-    }
-    if radar.curve_stroke_width.is_none() {
-        radar.curve_stroke_width = Some(2.0);
-    }
-    if radar.graticule_color.is_none() {
-        radar.graticule_color = Some("#DEDEDE".to_string());
-    }
-    if radar.graticule_stroke_width.is_none() {
-        radar.graticule_stroke_width = Some(1.0);
-    }
-    if radar.graticule_opacity.is_none() {
-        radar.graticule_opacity = Some(0.3);
-    }
-    if radar.legend_box_size.is_none() {
-        radar.legend_box_size = Some(12.0);
-    }
-    if radar.legend_font_size.is_none() {
-        radar.legend_font_size = Some(12.0);
-    }
+    radar.set_axis_color_if_none(line_color);
+    radar.set_axis_stroke_width_if_none(2);
+    radar.set_axis_label_font_size_if_none(12);
+    radar.set_curve_opacity_if_none(0.5);
+    radar.set_curve_stroke_width_if_none(2);
+    radar.set_graticule_color_if_none("#DEDEDE");
+    radar.set_graticule_opacity_if_none(0.3);
+    radar.set_graticule_stroke_width_if_none(1);
+    radar.set_legend_box_size_if_none(12);
+    radar.set_legend_font_size_if_none(12);
 
     // xyChart
     let xy = tv.xy_chart.get_or_insert_with(Default::default);
@@ -243,14 +223,9 @@ pub(crate) fn apply_base_theme_defaults(tv: &mut ThemeVariables) {
         .filter(|s| !s.trim().is_empty())
         .unwrap_or("white")
         .to_string();
-    if xy.background_color.is_none() {
-        xy.background_color = Some(bg);
-    }
+    xy.set_background_color_if_none(bg);
+    xy.set_plot_color_palette_if_none(
+        "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0",
+    );
     xy.fill_prime_color(primary_text_color);
-    if xy.plot_color_palette.is_none() {
-        xy.plot_color_palette = Some(
-            "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0"
-                .to_string(),
-        );
-    }
 }

@@ -295,14 +295,9 @@ pub(crate) fn apply_neo_dark_theme_defaults(tv: &mut ThemeVariables) {
         .or_else(|| tv.text_color.as_deref().filter(|s| !s.trim().is_empty()))
         .unwrap_or("#333")
         .to_string();
-    if xy.background_color.is_none() {
-        xy.background_color = Some(bg);
-    }
+    xy.set_background_color_if_none(bg);
+    xy.set_plot_color_palette_if_none(
+        "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0",
+    );
     xy.fill_prime_color(pt);
-    if xy.plot_color_palette.is_none() {
-        xy.plot_color_palette = Some(
-            "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0"
-                .to_string(),
-        );
-    }
 }
