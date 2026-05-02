@@ -102,7 +102,7 @@ mod tests {
         );
         assert_eq!(
             tv.get("errorTextColor").and_then(|v| v.as_str()),
-            Some("rgb(202.9906542056, 158.4112149531, 219.0887850467)")
+            Some("#cb9edb")
         );
         assert_eq!(tv.get("titleColor").and_then(|v| v.as_str()), Some("white"));
     }
@@ -151,18 +151,15 @@ mod tests {
             .and_then(|v| v.as_object())
             .unwrap();
 
-        assert_eq!(tv.get("cScale1").and_then(|v| v.as_str()), Some("#0b0000"));
         assert_eq!(
-            tv.get("cScalePeer1").and_then(|v| v.as_str()),
-            Some("hsl(0, 100%, 12.1568627451%)")
+            tv.get("cScale1").and_then(|v| v.as_str()),
+            Some("hsl(180, 1.5873015873%, 28.3529411765%)")
         );
-        assert_eq!(
-            tv.get("cScaleInv1").and_then(|v| v.as_str()),
-            Some("#f4ffff")
-        );
+        assert_eq!(tv.get("cScalePeer1").and_then(|v| v.as_str()), None);
+        assert_eq!(tv.get("cScaleInv1").and_then(|v| v.as_str()), None);
         assert_eq!(
             tv.get("cScaleLabel1").and_then(|v| v.as_str()),
-            Some("lightgrey")
+            Some("black")
         );
     }
 
