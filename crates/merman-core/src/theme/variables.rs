@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct XyChartThemeVars {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -82,7 +82,7 @@ impl XyChartThemeVars {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct RadarThemeVars {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -173,7 +173,7 @@ impl RadarThemeVars {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct WardleyThemeVars {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -202,7 +202,7 @@ pub struct WardleyThemeVars {
     pub annotation_fill: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PacketThemeVars {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -219,7 +219,7 @@ pub struct PacketThemeVars {
     pub block_fill_color: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ThemeVariables {
     // --- Base colors ---

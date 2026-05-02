@@ -137,13 +137,13 @@ pub(crate) fn apply_redux_color_theme_defaults(tv: &mut ThemeVariables) {
     // secondaryTextColor = invert(secondaryColor)
     if !is_truthy(&tv.secondary_text_color) {
         let rgb = Rgb::from(secondary_hsl);
-        tv.secondary_text_color = Some(rgb.invert_rgb_to_rgb_string());
+        tv.secondary_text_color = Some(rgb.invert_from_js());
     }
 
     // tertiaryTextColor = invert(tertiaryColor)
     if !is_truthy(&tv.tertiary_text_color) {
         let rgb = Rgb::from(tertiary_hsl);
-        tv.tertiary_text_color = Some(rgb.invert_rgb_to_rgb_string());
+        tv.tertiary_text_color = Some(rgb.invert_from_js());
     }
 
     // =========================================================================
@@ -227,7 +227,7 @@ pub(crate) fn apply_redux_color_theme_defaults(tv: &mut ThemeVariables) {
         .as_deref()
         .filter(|s| !s.trim().is_empty())
         .map(|s| s.to_string())
-        .unwrap_or_else(|| Rgb::from(tertiary_hsl).invert_rgb_to_rgb_string());
+        .unwrap_or_else(|| Rgb::from(tertiary_hsl).invert_from_js());
     tv.set_title_color_if_none(&tertiary_text_color);
 
     // edgeLabelBackground = darkMode ? darken(secondaryColor, 30) : secondaryColor
@@ -845,35 +845,35 @@ pub(crate) fn apply_redux_color_theme_defaults(tv: &mut ThemeVariables) {
     // gitInv0-7 = invert(git0-7)
     if !is_truthy(&tv.git_inv0) {
         let rgb = Rgb::from(git0_hsl);
-        tv.git_inv0 = Some(rgb.invert_rgb_to_rgb_string());
+        tv.git_inv0 = Some(rgb.invert_from_js());
     }
     if !is_truthy(&tv.git_inv1) {
         let rgb = Rgb::from(git1_hsl);
-        tv.git_inv1 = Some(rgb.invert_rgb_to_rgb_string());
+        tv.git_inv1 = Some(rgb.invert_from_js());
     }
     if !is_truthy(&tv.git_inv2) {
         let rgb = Rgb::from(git2_hsl);
-        tv.git_inv2 = Some(rgb.invert_rgb_to_rgb_string());
+        tv.git_inv2 = Some(rgb.invert_from_js());
     }
     if !is_truthy(&tv.git_inv3) {
         let rgb = Rgb::from(git3_hsl);
-        tv.git_inv3 = Some(rgb.invert_rgb_to_rgb_string());
+        tv.git_inv3 = Some(rgb.invert_from_js());
     }
     if !is_truthy(&tv.git_inv4) {
         let rgb = Rgb::from(git4_hsl);
-        tv.git_inv4 = Some(rgb.invert_rgb_to_rgb_string());
+        tv.git_inv4 = Some(rgb.invert_from_js());
     }
     if !is_truthy(&tv.git_inv5) {
         let rgb = Rgb::from(git5_hsl);
-        tv.git_inv5 = Some(rgb.invert_rgb_to_rgb_string());
+        tv.git_inv5 = Some(rgb.invert_from_js());
     }
     if !is_truthy(&tv.git_inv6) {
         let rgb = Rgb::from(git6_hsl);
-        tv.git_inv6 = Some(rgb.invert_rgb_to_rgb_string());
+        tv.git_inv6 = Some(rgb.invert_from_js());
     }
     if !is_truthy(&tv.git_inv7) {
         let rgb = Rgb::from(git7_hsl);
-        tv.git_inv7 = Some(rgb.invert_rgb_to_rgb_string());
+        tv.git_inv7 = Some(rgb.invert_from_js());
     }
 
     // branchLabelColor = darkMode ? 'black' : labelTextColor
@@ -915,7 +915,7 @@ pub(crate) fn apply_redux_color_theme_defaults(tv: &mut ThemeVariables) {
         .as_deref()
         .filter(|s| !s.trim().is_empty())
         .map(|s| s.to_string())
-        .unwrap_or_else(|| Rgb::from(secondary_hsl).invert_rgb_to_rgb_string());
+        .unwrap_or_else(|| Rgb::from(secondary_hsl).invert_from_js());
     tv.set_commit_label_color_if_none(&secondary_text_color);
     // commitLabelBackground = secondaryColor
     tv.set_commit_label_background_if_none(secondary_hsl.to_string());
@@ -955,5 +955,24 @@ pub(crate) fn apply_redux_color_theme_defaults(tv: &mut ThemeVariables) {
     // dataLabelColor
     if xy.data_label_color.is_none() {
         xy.data_label_color = Some(pt);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::theme::variables::ThemeVariables;
+
+    static REDUX_COLOR_THEME_JSON: &str = include_str!("../../assets/theme/redux-color.json");
+
+    #[test]
+    fn compare_with_mermaid_theme_json() {
+        let mut base = ThemeVariables::default();
+        super::apply_redux_color_theme_defaults(&mut base);
+        let json = serde_json::to_string_pretty(&base).unwrap();
+        let from_mermaid = serde_json::from_str::<ThemeVariables>(REDUX_COLOR_THEME_JSON).unwrap();
+        let from_mermaid_json = serde_json::to_string_pretty(&from_mermaid).unwrap();
+        let diff =
+            similar_asserts::SimpleDiff::from_str(&json, &from_mermaid_json, "merman", "mermaid");
+        println!("{}", diff);
     }
 }

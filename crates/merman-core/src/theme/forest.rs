@@ -257,3 +257,22 @@ pub(crate) fn apply_forest_theme_defaults(tv: &mut ThemeVariables) {
     );
     xy.fill_prime_color(pt);
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::theme::variables::ThemeVariables;
+
+    static FOREST_THEME_JSON: &str = include_str!("../../assets/theme/forest.json");
+
+    #[test]
+    fn compare_with_mermaid_theme_json() {
+        let mut base = ThemeVariables::default();
+        super::apply_forest_theme_defaults(&mut base);
+        let json = serde_json::to_string_pretty(&base).unwrap();
+        let from_mermaid = serde_json::from_str::<ThemeVariables>(FOREST_THEME_JSON).unwrap();
+        let from_mermaid_json = serde_json::to_string_pretty(&from_mermaid).unwrap();
+        let diff =
+            similar_asserts::SimpleDiff::from_str(&json, &from_mermaid_json, "merman", "mermaid");
+        println!("{}", diff);
+    }
+}

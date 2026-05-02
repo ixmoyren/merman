@@ -24,12 +24,11 @@ pub(crate) fn apply_dark_theme_defaults(tv: &mut ThemeVariables) {
     tv.set_note_bkg_color_if_none("#fff5ad"); // overridden in updateColors → secondBkg
 
     // Gantt constructor values (some overridden in updateColors)
-    if !is_truthy(&tv.section_bkg_color)
-        && let Ok(rgb) = Rgb::try_from("#EAE8D9")
-    {
-        let hsl = Hsl::from(rgb);
-        tv.section_bkg_color = Some(hsl.adjust_hsl(0.0, 0.0, -30.0).to_string());
-    }
+    tv.set_section_bkg_color_if_none(
+        Hsl::from(Rgb::try_from("#EAE8D9").unwrap())
+            .adjust_hsl(0.0, 0.0, -30.0)
+            .to_string(),
+    );
     tv.set_section_bkg_color2_if_none("#EAE8D9");
     tv.set_task_text_clickable_color_if_none("#003163");
     tv.set_active_task_bkg_color_if_none("#81B1DB");
@@ -103,9 +102,7 @@ pub(crate) fn apply_dark_theme_defaults(tv: &mut ThemeVariables) {
         .to_string();
 
     // secondaryColor = lighten(primaryColor, 16) [constructor]
-    if !is_truthy(&tv.secondary_color) {
-        tv.secondary_color = Some(primary_hsl.adjust_hsl(0.0, 0.0, 16.0).to_string());
-    }
+    tv.set_secondary_color_if_none(primary_hsl.adjust_hsl(0.0, 0.0, 16.0).to_string());
     let secondary_hsl = tv
         .secondary_color
         .as_deref()
@@ -164,33 +161,10 @@ pub(crate) fn apply_dark_theme_defaults(tv: &mut ThemeVariables) {
         );
     }
 
-    // secondaryTextColor = invert(secondaryColor) [constructor]
-    if !is_truthy(&tv.secondary_text_color)
-        && let Ok(Rgb { r, g, b }) = Rgb::try_from(secondary_hsl.to_string())
-    {
-        tv.secondary_text_color = Some(
-            Rgb {
-                r: 1.0 - r,
-                g: 1.0 - g,
-                b: 1.0 - b,
-            }
-            .to_string(),
-        );
-    }
+    tv.set_secondary_text_color_if_none(Rgb::from(secondary_hsl).invert_from_hsl().to_string());
 
-    // tertiaryTextColor = invert(tertiaryColor) [constructor]
-    if !is_truthy(&tv.tertiary_text_color)
-        && let Ok(Rgb { r, g, b }) = Rgb::try_from(tertiary_hsl.to_string())
-    {
-        tv.tertiary_text_color = Some(
-            Rgb {
-                r: 1.0 - r,
-                g: 1.0 - g,
-                b: 1.0 - b,
-            }
-            .to_string(),
-        );
-    }
+    // tertiaryTextColor = invert(tertiaryColor)
+    tv.set_tertiary_text_color_if_none(Rgb::from(tertiary_hsl).invert_from_hsl().to_string());
 
     // lineColor = mainContrastColor [updateColors overrides constructor invert(background)]
     let main_contrast_color = tv
@@ -1081,4 +1055,27 @@ pub(crate) fn apply_dark_theme_defaults(tv: &mut ThemeVariables) {
     // nodeBorder = nodeBorder || '#999' [updateColors last line]
     // (already set to border1 = '#ccc' above, so this || keeps it)
     tv.set_node_border_if_none("#999");
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::theme::variables::ThemeVariables;
+
+    static DARK_THEME_JSON: &str = include_str!("../../assets/theme/dark.json");
+
+    #[test]
+    fn compare_with_mermaid_theme_json() {
+        let mut base = ThemeVariables::default();
+        super::apply_dark_theme_defaults(&mut base);
+        let base_json = serde_json::to_string_pretty(&base).unwrap();
+        let base_from_mermaid = serde_json::from_str::<ThemeVariables>(DARK_THEME_JSON).unwrap();
+        let base_from_mermaid_json = serde_json::to_string_pretty(&base_from_mermaid).unwrap();
+        let diff = similar_asserts::SimpleDiff::from_str(
+            &base_json,
+            &base_from_mermaid_json,
+            "merman",
+            "mermaid",
+        );
+        println!("{}", diff);
+    }
 }

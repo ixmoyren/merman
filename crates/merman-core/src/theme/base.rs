@@ -59,10 +59,13 @@ pub(crate) fn apply_base_theme_defaults(tv: &mut ThemeVariables) {
 
     // secondaryColor = adjust(primaryColor, { h: -120 })
     let secondary_hsl = if let Some(ref v) = tv.secondary_color
-        && is_truthy(&tv.secondary_color)
         && let Ok(c) = Rgb::try_from(v)
     {
         c.into()
+    } else if let Some(ref v) = tv.secondary_color
+        && let Ok(hsl) = Hsl::try_from(v)
+    {
+        hsl
     } else {
         primary_hsl.adjust_hsl(-120.0, 0.0, 0.0)
     };
@@ -70,10 +73,13 @@ pub(crate) fn apply_base_theme_defaults(tv: &mut ThemeVariables) {
 
     // tertiaryColor = adjust(primaryColor, { h: 180, l: 5 })
     let tertiary_hsl = if let Some(ref v) = tv.tertiary_color
-        && is_truthy(&tv.tertiary_color)
         && let Ok(c) = Rgb::try_from(v)
     {
         c.into()
+    } else if let Some(ref v) = tv.tertiary_color
+        && let Ok(hsl) = Hsl::try_from(v)
+    {
+        hsl
     } else {
         primary_hsl.adjust_hsl(180.0, 0.0, 5.0)
     };
@@ -83,25 +89,19 @@ pub(crate) fn apply_base_theme_defaults(tv: &mut ThemeVariables) {
     let primary_border = primary_hsl
         .adjust_hsl(0.0, -40.0, if dark_mode { 10.0 } else { -10.0 })
         .to_string();
-    if !is_truthy(&tv.primary_border_color) {
-        tv.primary_border_color = Some(primary_border.clone());
-    }
+    tv.set_primary_border_color_if_none(&primary_border);
 
     // secondaryBorderColor = mkBorder(secondaryColor, darkMode)
     let secondary_border = secondary_hsl
         .adjust_hsl(0.0, -40.0, if dark_mode { 10.0 } else { -10.0 })
         .to_string();
-    if !is_truthy(&tv.secondary_border_color) {
-        tv.secondary_border_color = Some(secondary_border.clone());
-    }
+    tv.set_secondary_border_color_if_none(&secondary_border);
 
     // tertiaryBorderColor = mkBorder(tertiaryColor, darkMode)
     let tertiary_border = tertiary_hsl
         .adjust_hsl(0.0, -40.0, if dark_mode { 10.0 } else { -10.0 })
         .to_string();
-    if !is_truthy(&tv.tertiary_border_color) {
-        tv.tertiary_border_color = Some(tertiary_border.clone());
-    }
+    tv.set_tertiary_border_color_if_none(&tertiary_border);
 
     // noteBorderColor = mkBorder(noteBkgColor, darkMode)
     // noteBkgColor is fixed to "#fff5ad" in constructor/updateColors
@@ -121,46 +121,18 @@ pub(crate) fn apply_base_theme_defaults(tv: &mut ThemeVariables) {
     tv.set_note_text_color_if_none("#333");
 
     // secondaryTextColor = invert(secondaryColor)
-    if !is_truthy(&tv.secondary_text_color)
-        && let Ok(Rgb { r, g, b }) = Rgb::try_from(secondary_hsl.to_string())
-    {
-        tv.secondary_text_color = Some(
-            Rgb {
-                r: 1.0 - r,
-                g: 1.0 - g,
-                b: 1.0 - b,
-            }
-            .to_string(),
-        );
-    }
+    tv.set_secondary_text_color_if_none(Rgb::from(secondary_hsl).invert_from_hsl().to_string());
 
     // tertiaryTextColor = invert(tertiaryColor)
-    if !is_truthy(&tv.tertiary_text_color)
-        && let Ok(Rgb { r, g, b }) = Rgb::try_from(tertiary_hsl.to_string())
-    {
-        tv.tertiary_text_color = Some(
-            Rgb {
-                r: 1.0 - r,
-                g: 1.0 - g,
-                b: 1.0 - b,
-            }
-            .to_string(),
-        );
-    }
+    tv.set_tertiary_text_color_if_none(Rgb::from(tertiary_hsl).invert_from_hsl().to_string());
 
     // lineColor = invert(background)
-    if !is_truthy(&tv.line_color)
-        && let Ok(Rgb { r, g, b }) = Rgb::try_from(&background)
-    {
-        tv.line_color = Some(
-            Rgb {
-                r: 1.0 - r,
-                g: 1.0 - g,
-                b: 1.0 - b,
-            }
+    tv.set_line_color_if_none(
+        Rgb::try_from(&background)
+            .unwrap()
+            .invert_from_hsl()
             .to_string(),
-        );
-    }
+    );
     let line_color = tv
         .line_color
         .as_deref()
@@ -489,18 +461,16 @@ pub(crate) fn apply_base_theme_defaults(tv: &mut ThemeVariables) {
     for i in 0..12 {
         macro_rules! set_peer {
             ($field:ident) => {
-                if tv.$field.is_none()
-                    && let Ok(rgb) = Rgb::try_from(c_scales[i].to_string())
-                {
+                if tv.$field.is_none() {
+                    let rgb = Rgb::from(c_scales[i]);
                     tv.$field = Some(Hsl::from(rgb).adjust_hsl(0.0, 0.0, peer_delta).to_string());
                 }
             };
         }
         macro_rules! set_inv {
             ($field:ident) => {
-                if tv.$field.is_none()
-                    && let Ok(Rgb { r, g, b }) = Rgb::try_from(c_scales[i].to_string())
-                {
+                if tv.$field.is_none() {
+                    let Rgb { r, g, b } = Rgb::from(c_scales[i]);
                     tv.$field = Some(
                         Rgb {
                             r: 1.0 - r,
@@ -938,24 +908,23 @@ pub(crate) fn apply_base_theme_defaults(tv: &mut ThemeVariables) {
 
     // gitInv0-7 = invert(git0-7)
     for i in 0..8 {
-        if let Ok(Rgb { r, g, b }) = Rgb::try_from(git_darkened[i].to_string()) {
-            let inv = Rgb {
-                r: 1.0 - r,
-                g: 1.0 - g,
-                b: 1.0 - b,
-            }
-            .to_string();
-            match i {
-                0 => tv.set_git_inv0_if_none(&inv),
-                1 => tv.set_git_inv1_if_none(&inv),
-                2 => tv.set_git_inv2_if_none(&inv),
-                3 => tv.set_git_inv3_if_none(&inv),
-                4 => tv.set_git_inv4_if_none(&inv),
-                5 => tv.set_git_inv5_if_none(&inv),
-                6 => tv.set_git_inv6_if_none(&inv),
-                7 => tv.set_git_inv7_if_none(&inv),
-                _ => {}
-            }
+        let Rgb { r, g, b } = Rgb::from(git_darkened[i]);
+        let inv = Rgb {
+            r: 1.0 - r,
+            g: 1.0 - g,
+            b: 1.0 - b,
+        }
+        .to_string();
+        match i {
+            0 => tv.set_git_inv0_if_none(&inv),
+            1 => tv.set_git_inv1_if_none(&inv),
+            2 => tv.set_git_inv2_if_none(&inv),
+            3 => tv.set_git_inv3_if_none(&inv),
+            4 => tv.set_git_inv4_if_none(&inv),
+            5 => tv.set_git_inv5_if_none(&inv),
+            6 => tv.set_git_inv6_if_none(&inv),
+            7 => tv.set_git_inv7_if_none(&inv),
+            _ => {}
         }
     }
 
@@ -1209,4 +1178,27 @@ pub(crate) fn apply_base_theme_defaults(tv: &mut ThemeVariables) {
     radar.set_graticule_stroke_width_if_none(1);
     radar.set_legend_box_size_if_none(12);
     radar.set_legend_font_size_if_none(12);
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::theme::variables::ThemeVariables;
+
+    static BASE_THEME_JSON: &str = include_str!("../../assets/theme/base.json");
+
+    #[test]
+    fn compare_with_mermaid_base_theme_json() {
+        let mut base = ThemeVariables::default();
+        super::apply_base_theme_defaults(&mut base);
+        let base_json = serde_json::to_string_pretty(&base).unwrap();
+        let base_from_mermaid = serde_json::from_str::<ThemeVariables>(BASE_THEME_JSON).unwrap();
+        let base_from_mermaid_json = serde_json::to_string_pretty(&base_from_mermaid).unwrap();
+        let diff = similar_asserts::SimpleDiff::from_str(
+            &base_json,
+            &base_from_mermaid_json,
+            "merman",
+            "mermaid",
+        );
+        println!("{}", diff);
+    }
 }

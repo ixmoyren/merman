@@ -127,9 +127,8 @@ pub(crate) fn apply_neo_dark_theme_defaults(tv: &mut ThemeVariables) {
     }
 
     // secondaryTextColor = invert(secondaryColor) [constructor]
-    if !is_truthy(&tv.secondary_text_color)
-        && let Ok(Rgb { r, g, b }) = Rgb::try_from(secondary_hsl.to_string())
-    {
+    if !is_truthy(&tv.secondary_text_color) {
+        let Rgb { r, g, b } = Rgb::from(secondary_hsl);
         tv.secondary_text_color = Some(
             Rgb {
                 r: 1.0 - r,
@@ -141,9 +140,8 @@ pub(crate) fn apply_neo_dark_theme_defaults(tv: &mut ThemeVariables) {
     }
 
     // tertiaryTextColor = invert(tertiaryColor) [constructor]
-    if !is_truthy(&tv.tertiary_text_color)
-        && let Ok(Rgb { r, g, b }) = Rgb::try_from(tertiary_hsl.to_string())
-    {
+    if !is_truthy(&tv.tertiary_text_color) {
+        let Rgb { r, g, b } = Rgb::from(tertiary_hsl);
         tv.tertiary_text_color = Some(
             Rgb {
                 r: 1.0 - r,
@@ -397,18 +395,16 @@ pub(crate) fn apply_neo_dark_theme_defaults(tv: &mut ThemeVariables) {
     for i in 0..12 {
         macro_rules! set_peer {
             ($field:ident) => {
-                if tv.$field.is_none()
-                    && let Ok(rgb) = Rgb::try_from(c_scales[i].to_string())
-                {
+                if tv.$field.is_none() {
+                    let rgb = Rgb::from(c_scales[i]);
                     tv.$field = Some(Hsl::from(rgb).adjust_hsl(0.0, 0.0, peer_delta).to_string());
                 }
             };
         }
         macro_rules! set_inv {
             ($field:ident) => {
-                if tv.$field.is_none()
-                    && let Ok(Rgb { r, g, b }) = Rgb::try_from(c_scales[i].to_string())
-                {
+                if tv.$field.is_none() {
+                    let Rgb { r, g, b } = Rgb::from(c_scales[i]);
                     tv.$field = Some(
                         Rgb {
                             r: 1.0 - r,
@@ -692,24 +688,23 @@ pub(crate) fn apply_neo_dark_theme_defaults(tv: &mut ThemeVariables) {
 
     // gitInv = invert(git)
     for i in 0..8 {
-        if let Ok(Rgb { r, g, b }) = Rgb::try_from(git[i].to_string()) {
-            let inv = Rgb {
-                r: 1.0 - r,
-                g: 1.0 - g,
-                b: 1.0 - b,
-            }
-            .to_string();
-            match i {
-                0 => tv.set_git_inv0_if_none(&inv),
-                1 => tv.set_git_inv1_if_none(&inv),
-                2 => tv.set_git_inv2_if_none(&inv),
-                3 => tv.set_git_inv3_if_none(&inv),
-                4 => tv.set_git_inv4_if_none(&inv),
-                5 => tv.set_git_inv5_if_none(&inv),
-                6 => tv.set_git_inv6_if_none(&inv),
-                7 => tv.set_git_inv7_if_none(&inv),
-                _ => {}
-            }
+        let Rgb { r, g, b } = Rgb::from(git[i]);
+        let inv = Rgb {
+            r: 1.0 - r,
+            g: 1.0 - g,
+            b: 1.0 - b,
+        }
+        .to_string();
+        match i {
+            0 => tv.set_git_inv0_if_none(&inv),
+            1 => tv.set_git_inv1_if_none(&inv),
+            2 => tv.set_git_inv2_if_none(&inv),
+            3 => tv.set_git_inv3_if_none(&inv),
+            4 => tv.set_git_inv4_if_none(&inv),
+            5 => tv.set_git_inv5_if_none(&inv),
+            6 => tv.set_git_inv6_if_none(&inv),
+            7 => tv.set_git_inv7_if_none(&inv),
+            _ => {}
         }
     }
 
@@ -754,4 +749,23 @@ pub(crate) fn apply_neo_dark_theme_defaults(tv: &mut ThemeVariables) {
         "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0",
     );
     xy.fill_prime_color(primary_text_color);
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::theme::variables::ThemeVariables;
+
+    static NEO_DARK_THEME_JSON: &str = include_str!("../../assets/theme/neo-dark.json");
+
+    #[test]
+    fn compare_with_mermaid_theme_json() {
+        let mut base = ThemeVariables::default();
+        super::apply_neo_dark_theme_defaults(&mut base);
+        let json = serde_json::to_string_pretty(&base).unwrap();
+        let from_mermaid = serde_json::from_str::<ThemeVariables>(NEO_DARK_THEME_JSON).unwrap();
+        let from_mermaid_json = serde_json::to_string_pretty(&from_mermaid).unwrap();
+        let diff =
+            similar_asserts::SimpleDiff::from_str(&json, &from_mermaid_json, "merman", "mermaid");
+        println!("{}", diff);
+    }
 }

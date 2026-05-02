@@ -111,7 +111,7 @@ pub(crate) fn apply_default_theme_defaults(tv: &mut ThemeVariables) {
 
     if !is_truthy(&tv.tertiary_text_color) {
         let rgb = Rgb::from(tertiary_hsl);
-        tv.tertiary_text_color = Some(rgb.invert_rgb_to_rgb_string());
+        tv.tertiary_text_color = Some(rgb.invert_from_js());
     }
     let tertiary_text_color = tv
         .tertiary_text_color
@@ -323,4 +323,23 @@ pub(crate) fn apply_default_theme_defaults(tv: &mut ThemeVariables) {
         "#ECECFF,#8493A6,#FFC3A0,#DCDDE1,#B8E994,#D1A36F,#C3CDE6,#FFB6C1,#496078,#F8F3E3",
     );
     xy.fill_prime_color(primary_text_color);
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::theme::variables::ThemeVariables;
+
+    static DEFAULT_THEME_JSON: &str = include_str!("../../assets/theme/default.json");
+
+    #[test]
+    fn compare_with_mermaid_theme_json() {
+        let mut base = ThemeVariables::default();
+        super::apply_default_theme_defaults(&mut base);
+        let json = serde_json::to_string_pretty(&base).unwrap();
+        let from_mermaid = serde_json::from_str::<ThemeVariables>(DEFAULT_THEME_JSON).unwrap();
+        let from_mermaid_json = serde_json::to_string_pretty(&from_mermaid).unwrap();
+        let diff =
+            similar_asserts::SimpleDiff::from_str(&json, &from_mermaid_json, "merman", "mermaid");
+        println!("{}", diff);
+    }
 }

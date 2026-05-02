@@ -103,6 +103,22 @@ impl TryFrom<&str> for Hsl {
     }
 }
 
+impl TryFrom<String> for Hsl {
+    type Error = crate::error::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        value.as_str().try_into()
+    }
+}
+
+impl TryFrom<&String> for Hsl {
+    type Error = crate::error::Error;
+
+    fn try_from(value: &String) -> Result<Self, Self::Error> {
+        value.as_str().try_into()
+    }
+}
+
 impl Hsl {
     pub fn adjust_hsl(mut self, h_delta: f64, s_delta: f64, l_delta: f64) -> Hsl {
         self.h_deg = (self.h_deg + h_delta) % 360.0;

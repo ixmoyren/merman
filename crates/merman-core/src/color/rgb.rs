@@ -104,8 +104,14 @@ impl TryFrom<&String> for Rgb {
     }
 }
 
+impl AsRef<Rgb> for Rgb {
+    fn as_ref(&self) -> &Rgb {
+        self
+    }
+}
+
 impl Rgb {
-    pub fn invert_rgb_to_rgb_string(&self) -> String {
+    pub fn invert_from_js(&self) -> String {
         let r = round_1e10((1.0 - self.r) * 255.0);
         let g = round_1e10((1.0 - self.g) * 255.0);
         let b = round_1e10((1.0 - self.b) * 255.0);
@@ -115,6 +121,44 @@ impl Rgb {
             fmt_js_1e10(g),
             fmt_js_1e10(b)
         )
+    }
+
+    pub fn invert_from_hsl(&self) -> Self {
+        Self {
+            r: 1.0 - self.r,
+            g: 1.0 - self.g,
+            b: 1.0 - self.b,
+        }
+    }
+
+    pub fn new(r: f64, g: f64, b: f64) -> Self {
+        Self {
+            r: r.clamp(0.0, 255.0),
+            g: g.clamp(0.0, 255.0),
+            b: b.clamp(0.0, 255.0),
+        }
+    }
+
+    pub fn invert(&self) -> Self {
+        self.invert_with_weight(100.0)
+    }
+
+    pub fn mix(&self, b: impl AsRef<Rgb>, weight: f64) -> Self {
+        let b = b.as_ref();
+        let w = weight.clamp(0.0, 100.0) / 100.0;
+        let another_w = 1.0 - w;
+        let r = self.r * w + b.r * another_w;
+        let g = self.g * w + b.g * another_w;
+        let b = self.b * w + b.b * another_w;
+        Self::new(r, g, b)
+    }
+    pub fn invert_with_weight(&self, weight: f64) -> Self {
+        let invert = Self {
+            r: 255.0 - self.r,
+            g: 255.0 - self.g,
+            b: 255.0 - self.b,
+        };
+        invert.mix(self, weight)
     }
 
     pub fn parse_like(s: &str, prefix: &str) -> Result<Self, crate::error::Error> {

@@ -193,4 +193,43 @@ mod tests {
             Some("#F4F4F4")
         );
     }
+
+    /// Utility: generate JSON for all themes so they can be diffed against upstream.
+    /// Run with: cargo test -p merman-core -- generate_theme_json --nocapture
+    #[test]
+    fn generate_theme_json_for_diff() {
+        let out_dir = std::env::temp_dir().join("merman-themes");
+        std::fs::create_dir_all(&out_dir).unwrap();
+
+        let themes: Vec<(&str, fn(&mut ThemeVariables))> = vec![
+            ("base", apply_base_theme_defaults),
+            ("dark", apply_dark_theme_defaults),
+            ("default", apply_default_theme_defaults),
+            ("forest", apply_forest_theme_defaults),
+            ("neutral", apply_neutral_theme_defaults),
+            ("neo", apply_neo_theme_defaults),
+            ("neo-dark", apply_neo_dark_theme_defaults),
+            ("redux", apply_redux_theme_defaults),
+            ("redux-color", apply_redux_color_theme_defaults),
+            ("redux-dark", apply_redux_dark_theme_defaults),
+            ("redux-dark-color", apply_redux_dark_color_theme_defaults),
+        ];
+
+        for (name, apply_fn) in themes {
+            let mut tv = ThemeVariables::default();
+            apply_fn(&mut tv);
+            let json = serde_json::to_value(&tv).unwrap();
+            let file_path = out_dir.join(format!("{}.json", name));
+            let pretty = serde_json::to_string_pretty(&json).unwrap();
+            std::fs::write(&file_path, pretty + "\n").unwrap();
+            eprintln!(
+                "Wrote {} (fields: {})",
+                file_path.display(),
+                json.as_object().map_or(0, |o| o.len())
+            );
+        }
+
+        eprintln!("\nTheme JSONs written to {}", out_dir.display());
+        eprintln!("Diff with: diff <(cd {} && ... ) ...", out_dir.display());
+    }
 }

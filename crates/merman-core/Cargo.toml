@@ -41,3 +41,4 @@ lalrpop.workspace = true
 
 [dev-dependencies]
 futures.workspace = true
+similar-asserts = "2.0.0"
